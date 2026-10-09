@@ -1,0 +1,471 @@
+<!doctype html>
+<html lang="da">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0b0d10">
+<title>PrintHub</title>
+<link rel="manifest" href="/static/manifest.json">
+<link rel="apple-touch-icon" href="/static/icon.svg">
+<style>
+:root{
+  --bg:#f2f2f7; --card:#ffffff; --card2:#f7f7fa; --text:#111; --muted:#6b6b73; --line:#e3e3e8;
+  --accent:#ff6b2c; --accent-soft:#ffe9df; --ok:#22a55b; --warn:#e6a100; --err:#e5383b; --blue:#2f7cf6;
+  --radius:18px; --shadow:0 1px 2px rgba(0,0,0,.04),0 4px 16px rgba(0,0,0,.05);
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#0b0d10; --card:#16191e; --card2:#1d2127; --text:#f2f3f5; --muted:#8d939c; --line:#262a31;
+  --accent-soft:#3a2216; --shadow:none;
+}}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--text);font:15px/1.4 -apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif}
+button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
+.wrap{max-width:1100px;margin:0 auto;padding:12px 16px calc(90px + env(safe-area-inset-bottom))}
+header{display:flex;align-items:center;gap:10px;padding:calc(10px + env(safe-area-inset-top)) 16px 6px;max-width:1100px;margin:0 auto}
+header h1{font-size:26px;font-weight:700;margin:0;flex:1;letter-spacing:-.02em}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--err);display:inline-block}
+.dot.on{background:var(--ok)}
+.pill{font-size:12px;font-weight:600;padding:4px 10px;border-radius:99px;background:var(--card2);color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.pill.printing{background:var(--accent-soft);color:var(--accent)}
+.pill.complete{background:#dff5e8;color:var(--ok)} .pill.error{background:#fde2e2;color:var(--err)}
+.pill.paused{background:#fff3d1;color:#a87400}
+@media (prefers-color-scheme:dark){.pill.complete{background:#11301f}.pill.error{background:#3a1416}.pill.paused{background:#3a2e10;color:#f0c14b}}
+.iconbtn{width:38px;height:38px;border-radius:12px;background:var(--card);box-shadow:var(--shadow);display:grid;place-items:center;font-size:18px;text-decoration:none;color:var(--text)}
+.grid{display:grid;gap:14px}
+@media (min-width:860px){.grid.two{grid-template-columns:1.3fr 1fr}}
+.card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px}
+.card h2{font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:0 0 10px}
+.cam{padding:0;overflow:hidden;position:relative;background:#000;aspect-ratio:4/3}
+.cam img{width:100%;height:100%;object-fit:contain;display:block}
+.cam .camctl{position:absolute;right:10px;bottom:10px;display:flex;gap:6px}
+.cam .camctl button{background:rgba(0,0,0,.55);color:#fff;border-radius:10px;padding:6px 10px;font-size:13px;backdrop-filter:blur(8px)}
+.cam .nocam{position:absolute;inset:0;display:grid;place-items:center;color:#999;font-size:14px}
+.job{display:flex;gap:14px;align-items:center}
+.job .thumb{width:72px;height:72px;border-radius:14px;background:var(--card2);object-fit:contain;flex:none}
+.job .name{font-weight:600;word-break:break-word}
+.job .meta{color:var(--muted);font-size:13px}
+.bar{height:8px;border-radius:99px;background:var(--card2);overflow:hidden;margin:12px 0 6px}
+.bar>div{height:100%;background:var(--accent);border-radius:99px;transition:width .6s}
+.row{display:flex;gap:10px;align-items:center}
+.row.between{justify-content:space-between}
+.btn{padding:11px 16px;border-radius:12px;background:var(--card2);font-weight:600;flex:1;text-align:center}
+.btn.primary{background:var(--accent);color:#fff}
+.btn.danger{background:var(--err);color:#fff}
+.btn.small{flex:none;padding:7px 12px;font-size:13px;border-radius:10px}
+.btn:disabled{opacity:.4}
+.temps{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.temp{background:var(--card2);border-radius:14px;padding:12px;text-align:left}
+.temp .lbl{font-size:12px;color:var(--muted);font-weight:600}
+.temp .val{font-size:28px;font-weight:700;letter-spacing:-.02em}
+.temp .tgt{font-size:13px;color:var(--muted)}
+.temp.heating .val{color:var(--accent)}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
+.stat{background:var(--card2);border-radius:12px;padding:8px 10px}
+.stat b{display:block;font-size:16px}
+.stat span{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.list{display:flex;flex-direction:column}
+.item{display:flex;gap:12px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line)}
+.item:last-child{border:0}
+.item img,.item .ph{width:52px;height:52px;border-radius:12px;background:var(--card2);object-fit:contain;flex:none;display:grid;place-items:center;font-size:22px}
+.item .info{flex:1;min-width:0}
+.item .info .name{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.item .info .meta{font-size:12px;color:var(--muted)}
+.item .acts{display:flex;gap:6px}
+.empty{color:var(--muted);text-align:center;padding:24px 0}
+.tabs{position:fixed;left:0;right:0;bottom:0;background:color-mix(in srgb,var(--card) 88%,transparent);backdrop-filter:blur(20px);border-top:1px solid var(--line);display:flex;justify-content:space-around;padding:6px 0 calc(6px + env(safe-area-inset-bottom));z-index:10}
+.tabs button{display:flex;flex-direction:column;align-items:center;font-size:11px;color:var(--muted);gap:2px;padding:4px 14px}
+.tabs button .ic{font-size:21px}
+.tabs button.active{color:var(--accent)}
+.view{display:none}.view.active{display:block}
+.console{font:12px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--card2);border-radius:12px;padding:10px;height:320px;overflow:auto;white-space:pre-wrap}
+.console .cmd{color:var(--blue)}
+input[type=text],input[type=number]{font:inherit;color:var(--text);background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:10px 12px;width:100%}
+.sheet-bg{position:fixed;inset:0;background:rgba(0,0,0,.4);display:none;z-index:20;align-items:flex-end;justify-content:center}
+.sheet-bg.open{display:flex}
+.sheet{background:var(--card);width:100%;max-width:520px;border-radius:22px 22px 0 0;padding:18px 18px calc(18px + env(safe-area-inset-bottom))}
+.sheet h3{margin:0 0 12px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}
+.chip{padding:8px 14px;border-radius:99px;background:var(--card2);font-weight:600;font-size:14px}
+.toast{position:fixed;left:50%;top:calc(14px + env(safe-area-inset-top));transform:translateX(-50%) translateY(-120px);background:var(--text);color:var(--bg);padding:10px 16px;border-radius:12px;font-weight:600;z-index:30;transition:transform .3s;max-width:90%}
+.toast.show{transform:translateX(-50%) translateY(0)}
+.estop{background:var(--err);color:#fff;font-weight:800;border-radius:12px;padding:0 12px;height:38px;font-size:13px;letter-spacing:.03em}
+.drop{display:block;cursor:pointer;border:2px dashed var(--line);border-radius:14px;padding:16px;text-align:center;color:var(--muted);margin-bottom:10px}
+.drop.over{border-color:var(--accent);color:var(--accent)}
+.muted{color:var(--muted)}
+.offline{background:var(--err);color:#fff;text-align:center;padding:6px;font-size:13px;font-weight:600;display:none}
+.offline.show{display:block}
+</style>
+</head>
+<body>
+<div class="offline" id="offline">Ingen forbindelse til printeren – prøver igen…</div>
+<header>
+  <span class="dot" id="dot"></span>
+  <h1 id="title">PrintHub</h1>
+  <span class="pill" id="statePill">–</span>
+  <a class="iconbtn" id="obicoBtn" href="#" target="_blank" title="Obico (AI-overvågning)" style="display:none">🧠</a>
+  <button class="estop" id="estopBtn" title="Nødstop">STOP</button>
+</header>
+
+<div class="wrap">
+  <!-- PRINTER -->
+  <section class="view active" id="v-printer">
+    <div class="grid two">
+      <div class="grid">
+        <div class="card cam" id="camCard">
+          <img id="camImg" alt="">
+          <div class="nocam" id="noCam" style="display:none">Kamera ikke tilgængeligt</div>
+          <div class="camctl">
+            <button id="camMode">Live</button>
+            <button id="camFull">⤢</button>
+          </div>
+        </div>
+      </div>
+      <div class="grid">
+        <div class="card">
+          <h2>Job</h2>
+          <div class="job">
+            <img class="thumb" id="jobThumb" alt="">
+            <div style="flex:1;min-width:0">
+              <div class="name" id="jobName">Ingen aktivt print</div>
+              <div class="meta" id="jobMeta"></div>
+            </div>
+          </div>
+          <div class="bar"><div id="jobBar" style="width:0%"></div></div>
+          <div class="row between muted" style="font-size:13px"><span id="jobPct">0%</span><span id="jobEta"></span></div>
+          <div class="stats">
+            <div class="stat"><b id="sElapsed">–</b><span>Forløbet</span></div>
+            <div class="stat"><b id="sLeft">–</b><span>Tilbage</span></div>
+            <div class="stat"><b id="sDone">–</b><span>Færdig kl.</span></div>
+          </div>
+          <div class="row" style="margin-top:12px">
+            <button class="btn" id="pauseBtn" disabled>Pause</button>
+            <button class="btn danger" id="cancelBtn" disabled>Annullér</button>
+          </div>
+        </div>
+        <div class="card">
+          <h2>Temperaturer</h2>
+          <div class="temps">
+            <button class="temp" data-heater="extruder"><div class="lbl">Dyse</div><div class="val" id="tExt">–</div><div class="tgt" id="tExtT">Mål: –</div></button>
+            <button class="temp" data-heater="heater_bed"><div class="lbl">Bed</div><div class="val" id="tBed">–</div><div class="tgt" id="tBedT">Mål: –</div></button>
+          </div>
+          <div class="row" style="margin-top:12px">
+            <button class="btn small" data-preset="pla">PLA</button>
+            <button class="btn small" data-preset="petg">PETG</button>
+            <button class="btn small" data-preset="off">Sluk</button>
+            <span style="flex:1"></span>
+            <span class="muted" style="font-size:13px" id="speedInfo"></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FILER -->
+  <section class="view" id="v-files">
+    <div class="card">
+      <div class="row between" style="margin-bottom:10px">
+        <h2 style="margin:0">Filbibliotek</h2>
+        <span class="muted" style="font-size:12px" id="diskInfo"></span>
+      </div>
+      <label class="drop" id="drop">
+        <input type="file" id="fileInput" accept=".gcode,.g,.gco" multiple hidden>
+        <b>Upload G-code</b><br><span style="font-size:13px">Tryk her eller træk filer ind</span>
+      </label>
+      <div class="row" style="margin-bottom:6px">
+        <input type="text" id="fileSearch" placeholder="Søg…">
+      </div>
+      <div class="list" id="fileList"><div class="empty">Henter…</div></div>
+    </div>
+  </section>
+
+  <!-- KØ -->
+  <section class="view" id="v-queue">
+    <div class="card">
+      <div class="row between" style="margin-bottom:6px">
+        <h2 style="margin:0">Printkø</h2>
+        <span class="pill" id="queuePill">–</span>
+      </div>
+      <p class="muted" style="font-size:13px;margin:4px 0 12px">Når køen er aktiv, starter næste job automatisk, når det forrige er færdigt (kræver <code>automatic_transition</code> i moonraker.conf – ellers starter du hvert job med ▶).</p>
+      <div class="row" style="margin-bottom:10px">
+        <button class="btn primary" id="qStart">Start kø</button>
+        <button class="btn" id="qPause">Pause kø</button>
+        <button class="btn small" id="qClear">Ryd</button>
+      </div>
+      <div class="list" id="queueList"><div class="empty">Køen er tom</div></div>
+    </div>
+    <div class="card" style="margin-top:14px">
+      <h2>Seneste prints</h2>
+      <div class="list" id="historyList"><div class="empty">Henter…</div></div>
+    </div>
+  </section>
+
+  <!-- KONSOL -->
+  <section class="view" id="v-console">
+    <div class="card">
+      <h2>Konsol</h2>
+      <div class="console" id="console"></div>
+      <form class="row" id="gcodeForm" style="margin-top:10px">
+        <input type="text" id="gcodeInput" placeholder="G-code, fx G28" autocomplete="off" autocapitalize="characters">
+        <button class="btn primary small" style="padding:10px 16px">Send</button>
+      </form>
+      <div class="chips">
+        <button class="chip" data-gcode="G28">Home alle</button>
+        <button class="chip" data-gcode="BED_MESH_CALIBRATE">Bed mesh</button>
+        <button class="chip" data-gcode="M84">Motorer fra</button>
+        <button class="chip" data-gcode="SAVE_CONFIG">Gem config</button>
+        <button class="chip" id="fwRestart">Firmware-genstart</button>
+        <button class="chip" id="notifyTest">Test notifikation</button>
+      </div>
+    </div>
+  </section>
+</div>
+
+<nav class="tabs">
+  <button data-view="printer" class="active"><span class="ic">🖨️</span>Printer</button>
+  <button data-view="files"><span class="ic">📁</span>Filer</button>
+  <button data-view="queue"><span class="ic">📋</span>Kø</button>
+  <button data-view="console"><span class="ic">⌨️</span>Konsol</button>
+</nav>
+
+<div class="sheet-bg" id="sheetBg"><div class="sheet" id="sheet"></div></div>
+<div class="toast" id="toast"></div>
+
+<script>
+const $ = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
+let S = {}, Q = null, connected = false, files = [], cfg = {};
+const PRESETS = {pla:{extruder:205,heater_bed:60}, petg:{extruder:235,heater_bed:75}, off:{extruder:0,heater_bed:0}};
+const STATE_DA = {standby:'Klar',printing:'Printer',paused:'Pauset',complete:'Færdig',cancelled:'Annulleret',error:'Fejl'};
+
+function toast(msg){const t=$('#toast');t.textContent=msg;t.classList.add('show');clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('show'),2600)}
+async function api(path, opts={}){
+  if(opts.json){opts.body=JSON.stringify(opts.json);opts.headers={'Content-Type':'application/json'};delete opts.json}
+  const r = await fetch(path, opts);
+  let d=null; try{d=await r.json()}catch{}
+  if(!r.ok){const m=(d&&d.detail)||r.statusText;toast('Fejl: '+m);throw new Error(m)}
+  return d;
+}
+const enc = p => p.split('/').map(encodeURIComponent).join('/');
+function dur(s){if(s==null||!isFinite(s)||s<0)return'–';s=Math.round(s);const h=Math.floor(s/3600),m=Math.floor(s%3600/60);return h?`${h}t ${m}m`:`${m}m`}
+function size(b){if(!b)return'';const u=['B','KB','MB','GB'];let i=0;while(b>=1024&&i<3){b/=1024;i++}return b.toFixed(i?1:0)+' '+u[i]}
+function ago(ts){const s=Date.now()/1000-ts;if(s<3600)return Math.round(s/60)+' min siden';if(s<86400)return Math.round(s/3600)+' t siden';return new Date(ts*1000).toLocaleDateString('da-DK')}
+function esc(s){return String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
+
+// ---------- tabs
+$$('.tabs button').forEach(b=>b.onclick=()=>{
+  $$('.tabs button').forEach(x=>x.classList.toggle('active',x===b));
+  $$('.view').forEach(v=>v.classList.toggle('active',v.id==='v-'+b.dataset.view));
+  if(b.dataset.view==='files')loadFiles();
+  if(b.dataset.view==='queue')loadHistory();
+  if(b.dataset.view==='console')loadConsole();
+  setCamActive(b.dataset.view==='printer');
+});
+
+// ---------- live websocket
+function connectWS(){
+  const ws = new WebSocket((location.protocol==='https:'?'wss://':'ws://')+location.host+'/ws');
+  ws.onmessage = e => {
+    const m = JSON.parse(e.data);
+    if(m.type==='init'){S=m.status||{};Q=m.queue;setConn(m.connected);render();renderQueue()}
+    else if(m.type==='status'){S=m.status;render()}
+    else if(m.type==='queue'){Q=m.queue;renderQueue()}
+    else if(m.type==='connection'){setConn(m.connected)}
+    else if(m.type==='files_changed'){if($('#v-files').classList.contains('active'))loadFiles()}
+  };
+  ws.onclose = () => {setConn(false);setTimeout(connectWS,3000)};
+  setInterval(()=>{try{ws.readyState===1&&ws.send('ping')}catch{}},25000);
+}
+function setConn(c){connected=c;$('#dot').classList.toggle('on',c);$('#offline').classList.toggle('show',!c)}
+
+// ---------- render printer
+let lastFile=null, fileMeta={};
+function render(){
+  const ps=S.print_stats||{}, st=ps.state||'standby';
+  const pill=$('#statePill'); pill.textContent=STATE_DA[st]||st; pill.className='pill '+st;
+  const ex=S.extruder||{}, bed=S.heater_bed||{};
+  $('#tExt').textContent=ex.temperature!=null?ex.temperature.toFixed(1)+'°':'–';
+  $('#tExtT').textContent='Mål: '+(ex.target?ex.target.toFixed(0)+'°':'fra');
+  $('#tBed').textContent=bed.temperature!=null?bed.temperature.toFixed(1)+'°':'–';
+  $('#tBedT').textContent='Mål: '+(bed.target?bed.target.toFixed(0)+'°':'fra');
+  $('[data-heater=extruder]').classList.toggle('heating',ex.target>0);
+  $('[data-heater=heater_bed]').classList.toggle('heating',bed.target>0);
+  const gm=S.gcode_move||{};
+  $('#speedInfo').textContent=gm.speed_factor?`Hastighed ${Math.round(gm.speed_factor*100)}%`:'';
+
+  const active=['printing','paused'].includes(st);
+  const prog=(S.display_status&&S.display_status.progress)||(S.virtual_sdcard&&S.virtual_sdcard.progress)||0;
+  const fn=ps.filename||'';
+  $('#jobName').textContent=fn||'Ingen aktivt print';
+  if(fn&&fn!==lastFile){lastFile=fn;loadJobMeta(fn)}
+  if(!fn){$('#jobThumb').removeAttribute('src')}
+  const pct=active||st==='complete'?(st==='complete'?1:prog):0;
+  $('#jobBar').style.width=(pct*100).toFixed(1)+'%';
+  $('#jobPct').textContent=(pct*100).toFixed(1)+'%';
+  const el=ps.print_duration||0;
+  let left=null;
+  const est=fileMeta[fn]&&fileMeta[fn].estimated_time;
+  if(active&&prog>0.02){left=el/prog-el; if(est&&prog<0.15) left=Math.max(est-el,0)}
+  else if(active&&est){left=Math.max(est-el,0)}
+  $('#sElapsed').textContent=active||st==='complete'?dur(ps.total_duration):'–';
+  $('#sLeft').textContent=active?dur(left):'–';
+  $('#sDone').textContent=active&&left!=null?new Date(Date.now()+left*1000).toLocaleTimeString('da-DK',{hour:'2-digit',minute:'2-digit'}):'–';
+  const info=ps.info||{};
+  $('#jobMeta').textContent=[info.current_layer!=null&&info.total_layer?`Lag ${info.current_layer}/${info.total_layer}`:'',
+    ps.filament_used?`${(ps.filament_used/1000).toFixed(2)} m filament`:'', st==='error'?ps.message:''].filter(Boolean).join(' · ');
+  $('#jobEta').textContent=st==='printing'&&S.display_status&&S.display_status.message?S.display_status.message:'';
+  const pb=$('#pauseBtn'); pb.disabled=!active; pb.textContent=st==='paused'?'Genoptag':'Pause';
+  pb.classList.toggle('primary',st==='paused');
+  $('#cancelBtn').disabled=!active;
+}
+async function loadJobMeta(fn){
+  try{
+    const f=files.find(x=>x.path===fn);
+    if(f){fileMeta[fn]=f}else{const d=await api('/api/files');files=d.files;fileMeta[fn]=files.find(x=>x.path===fn)||{}}
+    const t=fileMeta[fn].thumbnail; if(t)$('#jobThumb').src='/api/thumb/'+enc(t); else $('#jobThumb').removeAttribute('src');
+  }catch{}
+}
+
+// ---------- controls
+$('#pauseBtn').onclick=()=>api('/api/print/'+((S.print_stats||{}).state==='paused'?'resume':'pause'),{method:'POST'});
+$('#cancelBtn').onclick=()=>{if(confirm('Annullér det igangværende print?'))api('/api/print/cancel',{method:'POST'}).then(()=>toast('Print annulleret'))};
+$('#estopBtn').onclick=()=>{if(confirm('NØDSTOP? Printeren stopper øjeblikkeligt og skal genstartes bagefter.'))api('/api/estop',{method:'POST'}).then(()=>toast('Nødstop sendt'))};
+$$('[data-preset]').forEach(b=>b.onclick=async()=>{const p=PRESETS[b.dataset.preset];
+  for(const h in p)await api('/api/temp',{method:'POST',json:{heater:h,target:p[h]}});toast(b.dataset.preset==='off'?'Varme slukket':'Forvarmer til '+b.textContent)});
+$$('.temp').forEach(b=>b.onclick=()=>{
+  const h=b.dataset.heater, cur=(S[h]||{}).target||0;
+  const opts=h==='extruder'?[0,190,205,215,235,250]:[0,50,60,70,80];
+  openSheet(`<h3>${h==='extruder'?'Dyse':'Bed'}-temperatur</h3>
+    <div class="chips">${opts.map(o=>`<button class="chip" data-t="${o}">${o?o+'°':'Sluk'}</button>`).join('')}</div>
+    <form class="row" id="tForm"><input type="number" id="tVal" value="${cur}" min="0" max="300" inputmode="numeric"><button class="btn primary small" style="padding:10px 16px">Sæt</button></form>`);
+  const set=async v=>{await api('/api/temp',{method:'POST',json:{heater:h,target:+v}});closeSheet()};
+  $$('#sheet [data-t]').forEach(c=>c.onclick=()=>set(c.dataset.t));
+  $('#tForm').onsubmit=e=>{e.preventDefault();set($('#tVal').value)};
+});
+function openSheet(html){$('#sheet').innerHTML=html;$('#sheetBg').classList.add('open')}
+function closeSheet(){$('#sheetBg').classList.remove('open')}
+$('#sheetBg').onclick=e=>{if(e.target.id==='sheetBg')closeSheet()};
+
+// ---------- kamera
+let camLive=true, camTimer=null, camActive=true;
+function setCamActive(on){camActive=on;startCam()}
+function startCam(){
+  const img=$('#camImg'); clearInterval(camTimer);
+  if(!camActive||document.hidden){img.src='';return}
+  img.onerror=()=>{$('#noCam').style.display='grid'}; img.onload=()=>{$('#noCam').style.display='none'};
+  if(camLive){img.src='/api/camera/stream?t='+Date.now()}
+  else{const snap=()=>img.src='/api/camera/snapshot?t='+Date.now();snap();camTimer=setInterval(snap,5000)}
+  $('#camMode').textContent=camLive?'Live':'Billede/5s';
+}
+$('#camMode').onclick=()=>{camLive=!camLive;startCam();toast(camLive?'Live-video':'Snapshot hvert 5. sek (sparer data)')};
+$('#camFull').onclick=()=>{const c=$('#camCard');(c.requestFullscreen||c.webkitRequestFullscreen||(()=>window.open('/api/camera/stream'))).call(c)};
+document.addEventListener('visibilitychange',startCam);
+
+// ---------- filer
+async function loadFiles(){
+  try{
+    const d=await api('/api/files'); files=d.files;
+    if(d.disk&&d.disk.free)$('#diskInfo').textContent=size(d.disk.free)+' fri';
+    renderFiles();
+  }catch{$('#fileList').innerHTML='<div class="empty">Kunne ikke hente filer</div>'}
+}
+function renderFiles(){
+  const q=$('#fileSearch').value.toLowerCase();
+  const list=files.filter(f=>f.path.toLowerCase().includes(q));
+  $('#fileList').innerHTML=list.length?list.map(f=>`
+    <div class="item">
+      ${f.thumbnail?`<img loading="lazy" src="/api/thumb/${enc(f.thumbnail)}">`:'<div class="ph">🧊</div>'}
+      <div class="info"><div class="name">${esc(f.path)}</div>
+        <div class="meta">${[f.estimated_time?dur(f.estimated_time):'',f.filament_total?(f.filament_total/1000).toFixed(1)+' m':'',size(f.size),f.modified?ago(f.modified):''].filter(Boolean).join(' · ')}</div></div>
+      <div class="acts">
+        <button class="btn small primary" data-print="${esc(f.path)}" title="Print nu">▶</button>
+        <button class="btn small" data-queue="${esc(f.path)}" title="Tilføj til kø">＋</button>
+        <button class="btn small" data-del="${esc(f.path)}" title="Slet">🗑</button>
+      </div>
+    </div>`).join(''):'<div class="empty">Ingen filer</div>';
+  $$('[data-print]').forEach(b=>b.onclick=()=>{
+    const st=(S.print_stats||{}).state;
+    if(['printing','paused'].includes(st))return toast('Printeren er optaget – tilføj til kø i stedet');
+    if(confirm('Start print af '+b.dataset.print+'?'))api('/api/print/start',{method:'POST',json:{filename:b.dataset.print}}).then(()=>{toast('Print startet');$('[data-view=printer]').click()})});
+  $$('[data-queue]').forEach(b=>b.onclick=()=>api('/api/queue',{method:'POST',json:{filenames:[b.dataset.queue]}}).then(()=>toast('Tilføjet til køen')));
+  $$('[data-del]').forEach(b=>b.onclick=()=>{if(confirm('Slet '+b.dataset.del+'?'))api('/api/files/'+enc(b.dataset.del),{method:'DELETE'}).then(()=>{toast('Slettet');loadFiles()})});
+}
+$('#fileSearch').oninput=renderFiles;
+async function uploadFiles(list){
+  if(!list.length)return;
+  const action=await new Promise(res=>{
+    openSheet(`<h3>${list.length===1?esc(list[0].name):list.length+' filer'}</h3>
+      <div class="grid"><button class="btn" data-a="none">Kun upload</button>
+      <button class="btn" data-a="queue">Upload og tilføj til kø</button>
+      ${list.length===1?'<button class="btn primary" data-a="print">Upload og print nu</button>':''}</div>`);
+    $$('#sheet [data-a]').forEach(b=>b.onclick=()=>{closeSheet();res(b.dataset.a)});
+  });
+  for(const f of list){
+    const fd=new FormData(); fd.append('file',f);
+    toast('Uploader '+f.name+'…');
+    await api('/api/files/upload?action='+action,{method:'POST',body:fd});
+  }
+  toast(action==='print'?'Print startet':action==='queue'?'Lagt i kø':'Upload færdig'); loadFiles();
+}
+$('#fileInput').onchange=e=>{uploadFiles([...e.target.files]);e.target.value=''};
+const drop=$('#drop');
+['dragenter','dragover'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.add('over')}));
+['dragleave','drop'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.remove('over')}));
+drop.addEventListener('drop',e=>uploadFiles([...e.dataTransfer.files]));
+
+// ---------- kø
+const QSTATE={ready:'Aktiv',loading:'Indlæser',starting:'Starter',paused:'Pauset'};
+function renderQueue(){
+  if(!Q)return;
+  $('#queuePill').textContent=QSTATE[Q.queue_state]||Q.queue_state;
+  $('#queuePill').className='pill '+(Q.queue_state==='ready'?'printing':'paused');
+  const jobs=Q.queued_jobs||[];
+  $('#queueList').innerHTML=jobs.length?jobs.map((j,i)=>{
+    const f=files.find(x=>x.path===j.filename)||{};
+    return `<div class="item">
+      ${f.thumbnail?`<img src="/api/thumb/${enc(f.thumbnail)}">`:`<div class="ph">${i+1}</div>`}
+      <div class="info"><div class="name">${esc(j.filename)}</div><div class="meta">${f.estimated_time?dur(f.estimated_time)+' · ':''}i kø ${dur(j.time_in_queue)}</div></div>
+      <div class="acts">${i?`<button class="btn small" data-jump="${j.job_id}" title="Flyt først">⤒</button>`:''}
+      <button class="btn small" data-rm="${j.job_id}" title="Fjern">✕</button></div></div>`}).join(''):'<div class="empty">Køen er tom – tilføj filer fra Filer</div>';
+  $$('[data-jump]').forEach(b=>b.onclick=()=>api('/api/queue/jump?job_id='+b.dataset.jump,{method:'POST'}));
+  $$('[data-rm]').forEach(b=>b.onclick=()=>api('/api/queue/'+b.dataset.rm,{method:'DELETE'}));
+}
+$('#qStart').onclick=()=>api('/api/queue/start',{method:'POST'}).then(()=>toast('Kø startet'));
+$('#qPause').onclick=()=>api('/api/queue/pause',{method:'POST'}).then(()=>toast('Kø pauset'));
+$('#qClear').onclick=()=>{if(confirm('Ryd hele køen?'))api('/api/queue/clear',{method:'POST'})};
+async function loadHistory(){
+  if(!files.length){try{files=(await api('/api/files')).files;renderQueue()}catch{}}
+  try{
+    const d=await api('/api/history?limit=15');
+    const icon={completed:'✅',cancelled:'⏹',error:'⚠️',klippy_shutdown:'⚠️',in_progress:'⏳'};
+    $('#historyList').innerHTML=(d.jobs||[]).map(j=>`<div class="item"><div class="ph">${icon[j.status]||'•'}</div>
+      <div class="info"><div class="name">${esc(j.filename)}</div><div class="meta">${dur(j.print_duration)} · ${ago(j.start_time)}</div></div>
+      <div class="acts"><button class="btn small" data-queue="${esc(j.filename)}" title="Print igen (kø)">↻</button></div></div>`).join('')||'<div class="empty">Ingen historik endnu</div>';
+    $$('#historyList [data-queue]').forEach(b=>b.onclick=()=>api('/api/queue',{method:'POST',json:{filenames:[b.dataset.queue]}}).then(()=>toast('Tilføjet til køen')));
+  }catch{$('#historyList').innerHTML='<div class="empty">Historik ikke tilgængelig ([history] i moonraker.conf)</div>'}
+}
+
+// ---------- konsol
+async function loadConsole(){
+  try{const d=await api('/api/gcode/log?count=80');const c=$('#console');
+    c.innerHTML=(d.gcode_store||[]).map(l=>`<div class="${l.type==='command'?'cmd':''}">${l.type==='command'?'› ':''}${esc(l.message)}</div>`).join('');
+    c.scrollTop=c.scrollHeight}catch{}
+}
+async function sendGcode(g){toast('Sender '+g);try{await api('/api/gcode',{method:'POST',json:{script:g}})}finally{loadConsole()}}
+$('#gcodeForm').onsubmit=e=>{e.preventDefault();const g=$('#gcodeInput').value.trim();if(g){sendGcode(g);$('#gcodeInput').value=''}};
+$$('[data-gcode]').forEach(b=>b.onclick=()=>{if(b.dataset.gcode!=='SAVE_CONFIG'||confirm('Gem config og genstart Klipper?'))sendGcode(b.dataset.gcode)});
+$('#fwRestart').onclick=()=>{if(confirm('Genstart firmware?'))api('/api/firmware_restart',{method:'POST'}).then(()=>toast('Firmware genstartes'))};
+$('#notifyTest').onclick=()=>api('/api/notify/test',{method:'POST'}).then(()=>toast('Test sendt'));
+
+// ---------- start
+(async()=>{
+  try{cfg=await api('/api/config');$('#title').textContent=cfg.printer_name;document.title=cfg.printer_name+' · PrintHub';
+    if(cfg.obico_url){const o=$('#obicoBtn');o.href=cfg.obico_url;o.style.display='grid'}}catch{}
+  connectWS(); startCam();
+  try{files=(await api('/api/files')).files}catch{}
+  setInterval(()=>{if((S.print_stats||{}).state==='printing')render()},30000);
+})();
+</script>
+</body>
+</html>

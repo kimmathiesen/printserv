@@ -1,0 +1,17 @@
+# Home Assistant: automation der modtager PrintHub-webhook og sender push til din iPhone
+alias: 3D-printer notifikation
+triggers:
+  - trigger: webhook
+    webhook_id: printhub
+    allowed_methods: [POST]
+    local_only: true
+actions:
+  - action: notify.mobile_app_kims_iphone   # ret til din enhed
+    data:
+      title: "{{ trigger.json.title }}"
+      message: "{{ trigger.json.message }}"
+      data:
+        push:
+          interruption-level: >-
+            {{ 'time-sensitive' if trigger.json.event in ['error','paused','complete'] else 'active' }}
+mode: queued

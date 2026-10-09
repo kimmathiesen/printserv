@@ -1,0 +1,40 @@
+# PrintHub-stack til Unraid (Compose Manager-plugin) – sti: /mnt/user/appdata/printhub
+services:
+  printhub:
+    build: .
+    image: printhub:latest
+    container_name: printhub
+    restart: unless-stopped
+    ports:
+      - "8095:8095"
+    environment:
+      # --- ret disse ---
+      MOONRAKER_URL: "http://192.168.68.XX:7125"     # Pi'ens IP
+      PRINTER_NAME: "CR-6 SE"
+      OBICO_URL: "http://192.168.68.58:3334"         # self-hosted Obico på Tower
+      # Kamera (crowsnest på Pi'en) – standard er http://<pi>/webcam/?action=stream
+      # CAMERA_STREAM_URL: "http://192.168.68.XX/webcam/?action=stream"
+      # CAMERA_SNAPSHOT_URL: "http://192.168.68.XX/webcam/?action=snapshot"
+      # --- notifikationer (valgfrit, begge kan bruges samtidig) ---
+      NTFY_URL: "http://192.168.68.58:8090"
+      NTFY_TOPIC: "cr6se"
+      # NTFY_TOKEN: ""
+      HA_WEBHOOK_URL: "http://192.168.68.72:8123/api/webhook/printhub"
+      # --- login (sæt ALTID hvis den eksponeres via Cloudflare/NPM) ---
+      APP_USER: "kim"
+      APP_PASSWORD: ""
+      # MOONRAKER_API_KEY: ""   # kun nødvendig hvis Tower ikke er trusted_client i moonraker.conf
+
+  ntfy:
+    image: binwiederhier/ntfy:latest
+    container_name: ntfy
+    command: serve
+    restart: unless-stopped
+    ports:
+      - "8090:80"
+    environment:
+      NTFY_BASE_URL: "http://192.168.68.58:8090"
+      NTFY_CACHE_FILE: "/var/cache/ntfy/cache.db"
+      NTFY_ATTACHMENT_CACHE_DIR: "/var/cache/ntfy/attachments"
+    volumes:
+      - /mnt/user/appdata/ntfy:/var/cache/ntfy
