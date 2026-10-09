@@ -20,7 +20,7 @@ HUB = "http://127.0.0.1:8095"
 MOCK = "http://127.0.0.1:7125"
 OUT = Path(sys.argv[1] if len(sys.argv) > 1 else "shots")
 SIZES = {"mobil": (390, 844), "desktop": (1280, 800)}
-TABS = ["printer", "files", "queue", "console"]
+TABS = ["printer", "files", "queue", "console", "settings"]
 # (navn, fane, hvad der klikkes på) - åbner et sheet, kun i scenariet `printer`
 SHEETS = [("temp", "printer", "[data-heater=extruder]"), ("fil", "files", "#fileList .item"),
           ("nodstop", "printer", "#estopBtn"), ("annuller", "printer", "#cancelBtn")]

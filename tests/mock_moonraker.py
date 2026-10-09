@@ -13,7 +13,7 @@ import time
 import zlib
 
 from fastapi import FastAPI, Request, WebSocket
-from fastapi.responses import Response, StreamingResponse
+from fastapi.responses import JSONResponse, Response, StreamingResponse
 
 app = FastAPI()
 st = {"print_stats": {"state": "standby", "filename": "", "print_duration": 0, "total_duration": 0,
@@ -21,10 +21,12 @@ st = {"print_stats": {"state": "standby", "filename": "", "print_duration": 0, "
       "extruder": {"temperature": 24.1, "target": 0, "power": 0},
       "heater_bed": {"temperature": 23.0, "target": 0, "power": 0},
       "display_status": {"progress": 0, "message": None}, "virtual_sdcard": {"progress": 0},
-      "gcode_move": {"speed_factor": 1, "extrude_factor": 1},
+      "gcode_move": {"speed_factor": 1, "extrude_factor": 1, "homing_origin": [0, 0, 0, 0]},
+      "fan": {"speed": 0},
       "webhooks": {"state": "ready", "state_message": "Printer is ready"}}
 queue = {"queued_jobs": [], "queue_state": "paused"}
 camera = {"on": True}
+database = {}
 files = {
     "benchy.gcode": {"size": 2_400_000, "estimated_time": 4380, "filament_total": 5200, "layer_height": 0.2,
                      "slicer": "OrcaSlicer", "modified_ago": 3600,
@@ -37,6 +39,7 @@ files = {
         "thumbnails": [{"width": 300, "height": 300, "relative_path": ".thumbs/kabel-300x300.png"}]},
 }
 _initial = copy.deepcopy((st, queue, files))
+
 
 
 # ---------------------------------------------------------------- små PNG-billeder uden afhængigheder
@@ -151,7 +154,8 @@ async def start(filename: str):
     st["display_status"]["progress"] = 0.34
     st["extruder"].update(temperature=204.6, target=205, power=0.42)
     st["heater_bed"].update(temperature=60.1, target=60, power=0.2)
-    await push({k: st[k] for k in ("print_stats", "display_status", "extruder", "heater_bed")})
+    st["fan"]["speed"] = 1.0
+    await push({k: st[k] for k in ("print_stats", "display_status", "extruder", "heater_bed", "fan")})
     return {"result": "ok"}
 
 
@@ -184,13 +188,56 @@ async def firmware_restart():
 
 @app.post("/printer/gcode/script")
 async def gcode(script: str):
-    if script.startswith("SET_HEATER"):
-        parts = dict(x.split("=") for x in script.split()[1:])
-        st[parts["HEATER"]]["target"] = float(parts["TARGET"])
-        await push({parts["HEATER"]: {"target": float(parts["TARGET"])}})
-    GCODE_LOG.append({"message": script, "type": "command", "time": time.time()})
+    for line in script.splitlines():
+        words = line.split()
+        cmd, args = words[0].upper(), dict(w.split("=", 1) if "=" in w else (w[0], w[1:]) for w in words[1:])
+        if cmd == "SET_HEATER_TEMPERATURE":
+            st[args["HEATER"]]["target"] = float(args["TARGET"])
+            await push({args["HEATER"]: {"target": float(args["TARGET"])}})
+        elif cmd in ("M220", "M221"):
+            key = "speed_factor" if cmd == "M220" else "extrude_factor"
+            st["gcode_move"][key] = float(args["S"]) / 100
+            await push({"gcode_move": st["gcode_move"]})
+        elif cmd in ("M106", "M107"):
+            st["fan"]["speed"] = float(args.get("S", 0)) / 255 if cmd == "M106" else 0
+            await push({"fan": st["fan"]})
+        elif cmd == "SET_GCODE_OFFSET":
+            st["gcode_move"]["homing_origin"][2] = round(st["gcode_move"]["homing_origin"][2] + float(args["Z_ADJUST"]), 3)
+            await push({"gcode_move": st["gcode_move"]})
+        GCODE_LOG.append({"message": line, "type": "command", "time": time.time()})
     GCODE_LOG.append({"message": "ok", "type": "response", "time": time.time()})
     return {"result": "ok"}
+
+
+@app.get("/server/temperature_store")
+def temperature_store(include_monitors: str = ""):
+    """1200 målinger (20 min). Med mål > 0 varmes der op ca. 12 min. før nu."""
+    out = {}
+    for heater, room, rate in (("extruder", 24.0, 0.012), ("heater_bed", 23.0, 0.006)):
+        tgt, temps, tgts = st[heater]["target"], [], []
+        for i in range(1200):
+            t0 = 480                                      # opvarmning starter her
+            if tgt and i >= t0:
+                v = tgt - (tgt - room) * math.exp(-rate * (i - t0)) + math.sin(i / 7) * 0.4
+                temps.append(round(v, 2)); tgts.append(tgt)
+            else:
+                temps.append(round(room + math.sin(i / 13) * 0.2, 2)); tgts.append(0)
+        out[heater] = {"temperatures": temps, "targets": tgts, "powers": [0] * 1200}
+    return {"result": out}
+
+
+@app.get("/server/database/item")
+def db_get(namespace: str, key: str):
+    if (namespace, key) not in database:
+        return JSONResponse({"error": {"code": 404, "message": f"Key '{key}' in namespace '{namespace}' not found"}}, 404)
+    return {"result": {"namespace": namespace, "key": key, "value": database[(namespace, key)]}}
+
+
+@app.post("/server/database/item")
+async def db_post(req: Request):
+    b = await req.json()
+    database[(b["namespace"], b["key"])] = b["value"]
+    return {"result": {"namespace": b["namespace"], "key": b["key"], "value": b["value"]}}
 
 
 GCODE_LOG = [{"message": m, "type": t, "time": i} for i, (t, m) in enumerate([
@@ -279,6 +326,7 @@ async def reset():
     files.clear(); files.update(f0)
     queue.clear(); queue.update(q0)
     camera["on"] = True
+    database.clear()
     await push(st)
     await push({}, "notify_job_queue_changed")
     return {"result": "ok"}

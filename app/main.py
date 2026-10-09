@@ -14,6 +14,7 @@ import websockets
 from fastapi import FastAPI, HTTPException, Request, UploadFile, WebSocket, WebSocketDisconnect
 from fastapi.responses import FileResponse, JSONResponse, Response, StreamingResponse
 from fastapi.staticfiles import StaticFiles
+from pydantic import BaseModel, Field
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 log = logging.getLogger("printhub")
@@ -41,11 +42,47 @@ SUBSCRIBE_OBJECTS = {
     "extruder": ["temperature", "target", "power"],
     "heater_bed": ["temperature", "target", "power"],
     "toolhead": ["homed_axes", "position", "print_time", "estimated_print_time"],
-    "gcode_move": ["speed_factor", "extrude_factor"],
+    "gcode_move": ["speed_factor", "extrude_factor", "homing_origin"],
     "fan": ["speed"],
     "webhooks": ["state", "state_message"],
     "idle_timeout": ["state"],
 }
+
+# ---------------------------------------------------------------- indstillinger (Moonrakers database)
+DB_NAMESPACE, DB_KEY = "printhub", "settings"
+EVENTS = ("started", "paused", "resumed", "complete", "cancelled", "error", "shutdown")
+
+
+class Preset(BaseModel):
+    name: str = Field(min_length=1, max_length=16)
+    extruder: int = Field(ge=0, le=300)
+    heater_bed: int = Field(ge=0, le=120)
+
+
+class Settings(BaseModel):
+    events: dict[str, bool] = Field(default_factory=lambda: {e: True for e in EVENTS})
+    presets: list[Preset] = Field(default_factory=lambda: [Preset(name="PLA", extruder=205, heater_bed=60),
+                                                           Preset(name="PETG", extruder=235, heater_bed=75)],
+                                  max_length=5)
+    camera: str = Field(default="live", pattern="^(live|snapshot)$")
+
+
+settings = Settings()
+
+
+async def load_settings() -> None:
+    """Henter indstillinger fra Moonraker; mangler de, bruges standardværdierne."""
+    global settings
+    try:
+        r = await http.get(f"{MOONRAKER_URL}/server/database/item", headers=_headers(), timeout=10,
+                           params={"namespace": DB_NAMESPACE, "key": DB_KEY})
+        if r.status_code == 200:
+            settings = Settings.model_validate(r.json()["result"]["value"])
+        elif r.status_code == 404:
+            settings = Settings()
+    except Exception as e:
+        log.warning("Kunne ikke hente indstillinger fra Moonraker: %s", e)
+
 
 # ---------------------------------------------------------------- tilstand
 state: dict = {"connected": False, "status": {}, "queue": None, "updated": 0}
@@ -80,6 +117,9 @@ async def broadcast(msg: dict) -> None:
 # ---------------------------------------------------------------- notifikationer
 async def notify(title: str, message: str, tags: str = "printer", priority: str = "default",
                  with_snapshot: bool = False, event: str = "") -> None:
+    if event in EVENTS and not settings.events.get(event, True):
+        log.info("Notifikation slået fra (%s): %s", event, title)
+        return
     log.info("Notifikation: %s - %s", title, message)
     tasks = []
     if NTFY_URL and NTFY_TOPIC:
@@ -187,6 +227,7 @@ async def moonraker_loop() -> None:
                 await ws.send(json.dumps({"jsonrpc": "2.0", "method": "printer.objects.subscribe",
                                           "params": {"objects": SUBSCRIBE_OBJECTS}, "id": sub_id}))
                 state["connected"] = True
+                await load_settings()
                 await refresh_queue()
                 await broadcast({"type": "connection", "connected": True})
                 async for raw in ws:
@@ -402,6 +443,55 @@ async def set_temp(body: dict):
         raise HTTPException(400, "Ugyldig temperatur")
     return await mr("POST", "/printer/gcode/script",
                     params={"script": f"SET_HEATER_TEMPERATURE HEATER={heater} TARGET={target:g}"})
+
+
+class Tune(BaseModel):
+    speed: int | None = Field(None, ge=10, le=300)        # %
+    flow: int | None = Field(None, ge=50, le=150)         # %
+    fan: int | None = Field(None, ge=0, le=100)           # %
+    z_adjust: float | None = Field(None, ge=-0.2, le=0.2)  # mm, relativt
+
+
+@app.post("/api/tune")
+async def tune(body: Tune):
+    """Finjustering under print. Bygger G-code selv, så klienten ikke kan sende vilkårlige kommandoer."""
+    lines = []
+    if body.speed is not None:
+        lines.append(f"M220 S{body.speed}")
+    if body.flow is not None:
+        lines.append(f"M221 S{body.flow}")
+    if body.fan is not None:
+        lines.append(f"M106 S{round(body.fan * 2.55)}" if body.fan else "M107")
+    if body.z_adjust:
+        lines.append(f"SET_GCODE_OFFSET Z_ADJUST={body.z_adjust:+.3f} MOVE=1")
+    if not lines:
+        raise HTTPException(400, "Intet at justere")
+    return await mr("POST", "/printer/gcode/script", params={"script": "\n".join(lines)})
+
+
+@app.get("/api/temp/history")
+async def temp_history():
+    """Moonrakers temperatur-log (1 måling pr. sekund, ca. 20 min)."""
+    d = await mr("GET", "/server/temperature_store", params={"include_monitors": "false"})
+    return {k: {"temperatures": d[k].get("temperatures", []), "targets": d[k].get("targets", [])}
+            for k in ("extruder", "heater_bed") if k in d}
+
+
+@app.get("/api/settings")
+async def get_settings():
+    return {"settings": settings.model_dump(), "events": EVENTS,
+            "channels": {"ntfy": bool(NTFY_URL and NTFY_TOPIC), "ha": bool(HA_WEBHOOK_URL)}}
+
+
+@app.put("/api/settings")
+async def put_settings(body: Settings):
+    global settings
+    body.events = {e: bool(body.events.get(e, True)) for e in EVENTS}
+    await mr("POST", "/server/database/item",
+             json={"namespace": DB_NAMESPACE, "key": DB_KEY, "value": body.model_dump()})
+    settings = body
+    await broadcast({"type": "settings", "settings": settings.model_dump()})
+    return {"settings": settings.model_dump()}
 
 
 @app.get("/api/gcode/log")

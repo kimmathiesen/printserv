@@ -46,7 +46,7 @@ def main():
         page.click("#tSet")
         expect(page.locator("#tExtT")).to_contain_text("210")
         assert status()["extruder"]["target"] == 210
-        page.click("[data-preset=petg]")
+        page.click("#presets button:has-text('PETG')")
         expect(page.locator("#tBedT")).to_contain_text("75")
         assert status()["heater_bed"]["target"] == 75
 
@@ -71,6 +71,24 @@ def main():
         page.click("#fPrint")
         expect(page.locator("#statusText")).to_contain_text("Printer nu")
         expect(page.locator("#jobName")).to_have_text("benchy")
+
+        # temperaturgraf er tegnet
+        expect(page.locator("#chart svg path.ext")).to_have_count(2)
+
+        # finjustering: +5 % hastighed, +0,01 mm z, blæser ned; sendes samlet efter en pause
+        expect(page.locator("#tuneCard")).to_be_visible()
+        page.click("[data-tune=speed] [data-d='1']")
+        page.click("[data-tune=z] [data-d='1']")
+        page.click("[data-tune=z] [data-d='1']")
+        page.click("[data-tune=fan] [data-d='-1']")
+        expect(page.locator("[data-tune=z] .tval")).to_have_text("+0,020 mm")
+        page.wait_for_timeout(900)
+        gm = status()["gcode_move"]
+        assert round(gm["speed_factor"], 2) == 1.05 and gm["homing_origin"][2] == 0.02, gm
+        assert round(status()["fan"]["speed"], 2) == 0.9
+        expect(page.locator("[data-tune=speed] .tval")).to_have_text("105 %")
+        page.click("#tuneReset")
+        expect(page.locator("[data-tune=speed] .tval")).to_have_text("100 %")
 
         # annullér: først fortryd, så bekræft
         page.click("#cancelBtn")
@@ -117,6 +135,40 @@ def main():
         page.fill("#gcodeInput", "M115")
         page.press("#gcodeInput", "Enter")
         expect(page.locator("#console")).to_contain_text("M115")
+
+        # indstillinger: hændelse fra, nyt preset, kamera, tema
+        page.click("[data-view=settings]")
+        page.uncheck("[data-event=started]", force=True)
+        page.wait_for_timeout(400)
+        assert get("/api/settings")["settings"]["events"]["started"] is False
+        page.click("#addPreset")
+        page.fill(".prow[data-i='2'] [data-k=name]", "ABS")
+        page.fill(".prow[data-i='2'] [data-k=extruder]", "245")
+        page.press(".prow[data-i='2'] [data-k=extruder]", "Tab")
+        page.fill(".prow[data-i='2'] [data-k=heater_bed]", "100")
+        page.press(".prow[data-i='2'] [data-k=heater_bed]", "Tab")
+        page.wait_for_timeout(400)
+        assert get("/api/settings")["settings"]["presets"][2] == {"name": "ABS", "extruder": 245, "heater_bed": 100}
+        expect(page.locator("#presets button")).to_have_count(4)
+        page.fill(".prow[data-i='2'] [data-k=extruder]", "999")
+        page.press(".prow[data-i='2'] [data-k=extruder]", "Tab")
+        expect(page.locator("#toast")).to_contain_text("Mellem 0 og 300")
+        page.click(".prow[data-i='2'] [data-del]")
+        page.click("[data-res='1']")
+        page.wait_for_timeout(400)
+        assert len(get("/api/settings")["settings"]["presets"]) == 2
+        page.click("#camSeg [data-cam=snapshot]")
+        page.wait_for_timeout(400)
+        assert get("/api/settings")["settings"]["camera"] == "snapshot"
+        page.click("#themeSeg [data-theme-set=dark]")
+        assert page.evaluate("document.documentElement.dataset.theme") == "dark"
+        page.reload()
+        assert page.evaluate("document.documentElement.dataset.theme") == "dark"
+        page.click("[data-view=settings]")
+        page.click("#themeSeg [data-theme-set=auto]")
+        page.click("#camSeg [data-cam=live]")
+        page.check("[data-event=started]", force=True)
+        page.wait_for_timeout(400)
 
         # hash-ruter
         page.goto(HUB + "/#ko")

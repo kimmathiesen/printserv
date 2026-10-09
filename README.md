@@ -99,6 +99,8 @@ PrintHub sender ved: start, pause, genoptag, færdig, annulleret, fejl og Klippe
 | **ntfy** | Installer ntfy-appen, abonnér på `http://192.168.68.58:8090/cr6se`. Udefra: brug Tailscale eller publicér via Cloudflare/NPM. |
 | **Home Assistant** | Importér `pi/ha-automation-eksempel.yaml` som automation (webhook-id `printhub`). Så får du push via HA-appen – også udefra. |
 
+Under **Indstillinger** (tandhjulet øverst) vælger du, hvilke hændelser der giver besked, dine temperatur-presets og om kameraet starter som live-video eller stillbilleder. Det gemmes i Moonrakers database (namespace `printhub`), så det følger printeren og ikke containeren. Selve kanalerne (ntfy, Home Assistant) sættes stadig kun op med miljøvariablerne ovenfor. Lyst/mørkt tema vælges pr. enhed.
+
 Obico sender selv notifikationer ved AI-fejl (konfigureres i Obico → Preferences). Test PrintHubs kanaler med **Konsol → Test notifikation**.
 
 ---
@@ -113,7 +115,8 @@ Kamera, thumbnails og alt andet går gennem PrintHub, så kun port 8095 skal ud.
 ---
 
 ## Hvad kan PrintHub
-- **Printer:** live kamera (eller snapshot hvert 5. sek for at spare data), progress, forløbet/tilbage/færdig-klokkeslæt, lag, filament, pause/genoptag/annullér, nødstop, temperaturer med PLA/PETG-presets.
+- **Printer:** live kamera (eller snapshot hvert 5. sek for at spare data), progress, forløbet/tilbage/færdig-klokkeslæt, lag, filament, pause/genoptag/annullér, nødstop, temperaturer med egne presets og graf over de sidste 20 min.
+- **Finjustering under print:** hastighed og flow (M220/M221), blæser og Z-offset (babystep ±0,01 mm).
 - **Filer:** upload (drag & drop eller fra mobilen) med valg *kun upload / læg i kø / print nu*, thumbnails fra sliceren, søgning, slet.
 - **Kø:** Moonrakers egen kø – tilføj, fjern, flyt først, start/pause, ryd. "Seneste prints" med ↻ for at printe igen.
 - **Konsol:** G-code-log og input, genveje (home, bed mesh, motorer fra, gem config, firmware-genstart).

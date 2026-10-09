@@ -7,6 +7,8 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="theme-color" content="#f2f2f7" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+<script>/* tema vælges pr. enhed under Indstillinger og sættes før første tegning */
+try{const t=localStorage.getItem('printhub.theme');if(t==='light'||t==='dark')document.documentElement.dataset.theme=t}catch{}</script>
 <title>PrintHub</title>
 <link rel="manifest" href="/static/manifest.json">
 <link rel="icon" href="/static/icon.svg">
@@ -18,7 +20,8 @@
   --s1:4px;--s2:8px;--s3:12px;--s4:16px;--s5:24px;--s6:32px;
   --r-card:22px;--r-inner:14px;--r-btn:14px;
   --f-large:34px;--f-title:22px;--f-head:17px;--f-body:15px;--f-sub:13px;--f-cap:12px;
-  --bg:#f2f2f7;--card:#fff;--card-elev:#fff;--seg-on:#fff;
+  --bg:#f2f2f7;--card:#fff;--card-elev:#fff;--seg-on:#fff;--iconbtn:var(--card);
+  --blue:#0a72e8;--blue-soft:rgba(10,114,232,.12);
   --fill:rgba(118,118,128,.12);--fill2:rgba(118,118,128,.07);
   --text:#1c1c1e;--muted:#6e6e73;--faint:#aeaeb2;--line:rgba(60,60,67,.13);
   --accent:#f2601f;--accent-soft:rgba(255,107,44,.13);
@@ -27,15 +30,25 @@
   --shadow:0 1px 2px rgba(0,0,0,.04),0 6px 20px rgba(0,0,0,.045);
   --tabh:58px;
 }
-@media (prefers-color-scheme:dark){:root{
-  --bg:#000;--card:#1c1c1e;--card-elev:#2c2c2e;--seg-on:#636366;
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]){
+  --bg:#000;--card:#1c1c1e;--card-elev:#2c2c2e;--seg-on:#636366;--iconbtn:var(--fill);
   --fill:rgba(118,118,128,.26);--fill2:rgba(118,118,128,.15);
   --text:#f5f5f7;--muted:#98989f;--faint:#636366;--line:rgba(84,84,88,.55);
-  --accent:#ff7a3d;--accent-soft:rgba(255,122,61,.18);
+  --accent:#ff7a3d;--accent-soft:rgba(255,122,61,.18);--blue:#409cff;--blue-soft:rgba(64,156,255,.18);
   --ok:#30d158;--ok-soft:rgba(48,209,88,.16);--warn:#ffb340;--warn-soft:rgba(255,159,10,.18);
   --err:#ff453a;--err-soft:rgba(255,69,58,.18);
   --shadow:none;
 }}
+:root[data-theme=dark]{color-scheme:dark;
+  --bg:#000;--card:#1c1c1e;--card-elev:#2c2c2e;--seg-on:#636366;--iconbtn:var(--fill);
+  --fill:rgba(118,118,128,.26);--fill2:rgba(118,118,128,.15);
+  --text:#f5f5f7;--muted:#98989f;--faint:#636366;--line:rgba(84,84,88,.55);
+  --accent:#ff7a3d;--accent-soft:rgba(255,122,61,.18);--blue:#409cff;--blue-soft:rgba(64,156,255,.18);
+  --ok:#30d158;--ok-soft:rgba(48,209,88,.16);--warn:#ffb340;--warn-soft:rgba(255,159,10,.18);
+  --err:#ff453a;--err-soft:rgba(255,69,58,.18);
+  --shadow:none;
+}
+:root[data-theme=light]{color-scheme:light}
 
 /* ---------------------------------------------------------------- basis */
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -62,8 +75,8 @@ h1{font-size:var(--f-large);font-weight:700;letter-spacing:-.025em;line-height:1
 [data-tone=warn] .dot{background:var(--warn)}
 [data-tone=err] .dot{background:var(--err)}
 .top-acts{display:flex;gap:var(--s2);align-items:center;align-self:flex-start}
-.iconbtn{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;background:var(--card);box-shadow:var(--shadow);color:var(--text);text-decoration:none;flex:none}
-@media (prefers-color-scheme:dark){.iconbtn{background:var(--fill)}}
+.iconbtn{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;background:var(--iconbtn);box-shadow:var(--shadow);color:var(--text);text-decoration:none;flex:none}
+.iconbtn.active{color:var(--accent)}
 .iconbtn.sm{width:32px;height:32px;background:var(--fill);box-shadow:none}
 .iconbtn.sm svg.i{width:17px;height:17px}
 .estop{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:40px;min-width:40px;border-radius:20px;background:var(--err-soft);color:var(--err);font-weight:600;font-size:14px}
@@ -182,6 +195,46 @@ h1{font-size:var(--f-large);font-weight:700;letter-spacing:-.025em;line-height:1
 .temp[data-reached] .tgt{color:var(--ok)}
 .temp .bar{width:100%;height:4px;margin-top:10px}
 .temp[data-reached] .bar i{background:var(--ok)}
+
+/* graf */
+.temp[data-heater=heater_bed][data-on] .lbl,.temp[data-heater=heater_bed][data-on] .tgt{color:var(--blue)}
+.temp[data-heater=heater_bed] .bar i{background:var(--blue)}
+.temp[data-reached] .tgt{color:var(--ok)!important}
+.chart{position:relative;height:118px;margin-top:var(--s4)}
+.chart svg{position:absolute;inset:0;overflow:visible}
+.chart .gl{stroke:var(--line);stroke-width:1}
+.chart text{fill:var(--faint);font-size:11px;font-variant-numeric:tabular-nums}
+.chart path{fill:none;stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
+.chart .ext{stroke:var(--accent)} .chart .bed{stroke:var(--blue)}
+.chart .tg{stroke-width:1.2;stroke-dasharray:3 4;opacity:.75}
+.chart-x{display:flex;justify-content:space-between;font-size:11px;color:var(--faint);margin-top:6px;padding-right:30px}
+
+/* finjustering og indstillinger: rækker */
+.rows{display:flex;flex-direction:column}
+.srow{display:flex;align-items:center;gap:var(--s3);min-height:52px;padding:6px 0;position:relative}
+.srow+.srow::before{content:"";position:absolute;top:0;left:40px;right:0;border-top:.5px solid var(--line)}
+.rows.plain .srow+.srow::before{left:0}
+.srow .lbl{flex:1;min-width:0;font-weight:500}
+.srow .lbl small{display:block;font-size:var(--f-sub);color:var(--muted);font-weight:400}
+.ticon{width:28px;height:28px;border-radius:8px;display:grid;place-items:center;background:var(--accent-soft);color:var(--accent);flex:none}
+.ticon svg.i{width:17px;height:17px}
+.tval{min-width:84px;text-align:center;font-size:var(--f-head);font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap}
+.tval.changed{color:var(--accent)}
+.switch{appearance:none;-webkit-appearance:none;width:51px;height:31px;border-radius:16px;background:var(--fill);position:relative;flex:none;cursor:pointer;margin:0;transition:background .2s}
+.switch::after{content:"";position:absolute;top:2px;left:2px;width:27px;height:27px;border-radius:50%;background:#fff;box-shadow:0 2px 4px rgba(0,0,0,.2);transition:transform .2s}
+.switch:checked{background:var(--ok)} .switch:checked::after{transform:translateX(20px)}
+.sub{font-size:var(--f-sub);font-weight:600;color:var(--muted);margin:var(--s4) 0 0}
+.foot{font-size:var(--f-sub);color:var(--muted);margin:var(--s3) 0 0}
+.state{font-size:var(--f-sub);color:var(--muted);font-weight:500} .state[data-on]{color:var(--ok)}
+.prow{display:grid;grid-template-columns:minmax(0,1fr) 76px 76px 32px;gap:var(--s2);align-items:center;padding:4px 0}
+.prow.head{font-size:var(--f-cap);color:var(--muted);font-weight:600;padding:0 0 2px}
+.prow.head span:nth-child(2),.prow.head span:nth-child(3){text-align:center}
+.prow .field{height:40px;padding:0 10px}
+.prow input[type=number]{text-align:center;-moz-appearance:textfield}
+.prow input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
+.page-title{font-size:var(--f-title);font-weight:700;letter-spacing:-.02em;margin:0 4px var(--s3)}
+.card .seg.full{width:100%}
+.card .seg.full button{padding:8px 4px}
 
 /* ---------------------------------------------------------------- lister */
 .list{display:flex;flex-direction:column}
@@ -343,6 +396,11 @@ h1{font-size:var(--f-large);font-weight:700;letter-spacing:-.025em;line-height:1
   <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></symbol>
   <symbol id="i-send" viewBox="0 0 24 24"><path d="M14.536 21.686a.5.5 0 0 0 .937-.024l6.5-19a.496.496 0 0 0-.635-.635l-19 6.5a.5.5 0 0 0-.024.937l7.93 3.18a2 2 0 0 1 1.112 1.11z"/><path d="m21.854 2.147-10.94 10.939"/></symbol>
   <symbol id="i-list-plus" viewBox="0 0 24 24"><path d="M11 12H3"/><path d="M16 6H3"/><path d="M16 18H3"/><path d="M18 9v6"/><path d="M21 12h-6"/></symbol>
+  <symbol id="i-gauge" viewBox="0 0 24 24"><path d="m12 14 4-4"/><path d="M3.34 19a10 10 0 1 1 17.32 0"/></symbol>
+  <symbol id="i-droplet" viewBox="0 0 24 24"><path d="M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5s-3.5-4-4-6.5c-.5 2.5-2 4.9-4 6.5C6 11.1 5 13 5 15a7 7 0 0 0 7 7z"/></symbol>
+  <symbol id="i-fan" viewBox="0 0 24 24"><path d="M10.827 16.379a6.082 6.082 0 0 1-8.618-7.002l5.412 1.45a6.082 6.082 0 0 1 7.002-8.618l-1.45 5.412a6.082 6.082 0 0 1 8.618 7.002l-5.412-1.45a6.082 6.082 0 0 1-7.002 8.618l1.45-5.412Z"/><path d="M12 12v.01"/></symbol>
+  <symbol id="i-move-v" viewBox="0 0 24 24"><path d="M12 2v20"/><path d="m8 18 4 4 4-4"/><path d="m8 6 4-4 4 4"/></symbol>
+  <symbol id="i-settings" viewBox="0 0 24 24"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></symbol>
   <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></symbol>
 </svg>
 
@@ -362,6 +420,7 @@ h1{font-size:var(--f-large);font-weight:700;letter-spacing:-.025em;line-height:1
     </nav>
     <div class="top-acts">
       <a class="iconbtn labeled" id="obicoBtn" href="#" target="_blank" rel="noopener" title="Obico (AI-overvågning)" aria-label="Obico" hidden><svg class="i"><use href="#i-eye"/></svg><span class="lbl">Obico</span></a>
+      <button class="iconbtn" data-view="settings" aria-label="Indstillinger" title="Indstillinger"><svg class="i"><use href="#i-settings"/></svg></button>
       <button class="estop" id="estopBtn" title="Nødstop" aria-label="Nødstop"><svg class="i"><use href="#i-octagon"/></svg><span class="lbl">Nødstop</span></button>
     </div>
   </header>
@@ -415,9 +474,7 @@ h1{font-size:var(--f-large);font-weight:700;letter-spacing:-.025em;line-height:1
         <div class="card">
           <div class="card-h">
             <h2>Temperaturer</h2><span class="sp"></span>
-            <div class="seg" id="presets">
-              <button data-preset="pla">PLA</button><button data-preset="petg">PETG</button><button data-preset="off">Sluk</button>
-            </div>
+            <div class="seg" id="presets"></div>
           </div>
           <div class="temps">
             <button class="temp" data-heater="extruder">
@@ -430,6 +487,25 @@ h1{font-size:var(--f-large);font-weight:700;letter-spacing:-.025em;line-height:1
               <span class="val" id="tBed">–</span><span class="tgt" id="tBedT">&nbsp;</span>
               <span class="bar"><i id="tBedBar"></i></span>
             </button>
+          </div>
+          <div class="chart" id="chart" role="img" aria-label="Temperatur de sidste 20 minutter"></div>
+          <div class="chart-x"><span>−20 min</span><span>−10 min</span><span>Nu</span></div>
+        </div>
+        <div class="card" id="tuneCard" hidden>
+          <div class="card-h"><h2>Finjustering</h2><span class="sp"></span><button class="link" id="tuneReset" hidden>Nulstil</button></div>
+          <div class="rows" id="tuneRows">
+            <div class="srow" data-tune="speed"><span class="ticon"><svg class="i"><use href="#i-gauge"/></svg></span><span class="lbl">Hastighed</span>
+              <button class="iconbtn sm" data-d="-1" aria-label="Langsommere"><svg class="i"><use href="#i-minus"/></svg></button><span class="tval"></span>
+              <button class="iconbtn sm" data-d="1" aria-label="Hurtigere"><svg class="i"><use href="#i-plus"/></svg></button></div>
+            <div class="srow" data-tune="flow"><span class="ticon"><svg class="i"><use href="#i-droplet"/></svg></span><span class="lbl">Flow</span>
+              <button class="iconbtn sm" data-d="-1" aria-label="Mindre flow"><svg class="i"><use href="#i-minus"/></svg></button><span class="tval"></span>
+              <button class="iconbtn sm" data-d="1" aria-label="Mere flow"><svg class="i"><use href="#i-plus"/></svg></button></div>
+            <div class="srow" data-tune="fan"><span class="ticon"><svg class="i"><use href="#i-fan"/></svg></span><span class="lbl">Blæser</span>
+              <button class="iconbtn sm" data-d="-1" aria-label="Mindre blæser"><svg class="i"><use href="#i-minus"/></svg></button><span class="tval"></span>
+              <button class="iconbtn sm" data-d="1" aria-label="Mere blæser"><svg class="i"><use href="#i-plus"/></svg></button></div>
+            <div class="srow" data-tune="z"><span class="ticon"><svg class="i"><use href="#i-move-v"/></svg></span><span class="lbl">Z-offset<small>Dysen op/ned under print</small></span>
+              <button class="iconbtn sm" data-d="-1" aria-label="Dysen tættere på pladen"><svg class="i"><use href="#i-minus"/></svg></button><span class="tval"></span>
+              <button class="iconbtn sm" data-d="1" aria-label="Dysen længere fra pladen"><svg class="i"><use href="#i-plus"/></svg></button></div>
           </div>
         </div>
         <div class="card" id="peekCard" hidden>
@@ -499,6 +575,39 @@ h1{font-size:var(--f-large);font-weight:700;letter-spacing:-.025em;line-height:1
       </div>
     </div>
   </section>
+
+  <!-- INDSTILLINGER -->
+  <section class="view" id="v-settings">
+    <h2 class="page-title">Indstillinger</h2>
+    <div class="cols even">
+      <div class="col">
+        <div class="card">
+          <div class="card-h"><h2>Notifikationer</h2></div>
+          <div class="rows plain" id="chanRows"></div>
+          <div class="sub">Giv besked ved</div>
+          <div class="rows plain" id="eventRows"></div>
+          <div class="row" style="margin-top:var(--s3)"><button class="btn" id="notifyTest2"><svg class="i"><use href="#i-bell"/></svg>Send testbesked</button></div>
+          <p class="foot">Hvor beskederne sendes hen, sættes op i docker-compose.yml (NTFY_URL, NTFY_TOPIC, HA_WEBHOOK_URL).</p>
+        </div>
+      </div>
+      <div class="col">
+        <div class="card">
+          <div class="card-h"><h2>Temperatur-presets</h2><span class="sp"></span><button class="btn small" id="addPreset"><svg class="i"><use href="#i-plus"/></svg>Tilføj</button></div>
+          <div id="presetRows"></div>
+        </div>
+        <div class="card">
+          <div class="card-h"><h2>Kamera</h2></div>
+          <div class="seg full" id="camSeg"><button data-cam="live">Live-video</button><button data-cam="snapshot">Billede hvert 5. sek.</button></div>
+          <p class="foot">Stillbilleder bruger langt mindre data, når du er væk hjemmefra.</p>
+        </div>
+        <div class="card">
+          <div class="card-h"><h2>Udseende</h2></div>
+          <div class="seg full" id="themeSeg"><button data-theme-set="auto">Automatisk</button><button data-theme-set="light">Lyst</button><button data-theme-set="dark">Mørkt</button></div>
+          <p class="foot">Gælder kun denne enhed.</p>
+        </div>
+      </div>
+    </div>
+  </section>
 </div>
 
 <div class="sheet-bg" id="sheetBg"><div class="sheet" id="sheet" role="dialog" aria-modal="true"></div></div>
@@ -510,10 +619,10 @@ h1{font-size:var(--f-large);font-weight:700;letter-spacing:-.025em;line-height:1
 const $ = s => document.querySelector(s);
 const $$ = s => [...document.querySelectorAll(s)];
 let S = {}, Q = null, connected = false, files = null, disk = {}, cfg = {};
-const PRESETS = {pla:{extruder:205,heater_bed:60}, petg:{extruder:235,heater_bed:75}, off:{extruder:0,heater_bed:0}};
+let ST = {presets:[{name:'PLA', extruder:205, heater_bed:60}, {name:'PETG', extruder:235, heater_bed:75}], camera:'live', events:{}}, stMeta = {};
 const STATE = {standby:['Klar','ok'], printing:['Printer nu','accent'], paused:['Sat på pause','warn'],
   complete:['Færdig','ok'], cancelled:['Annulleret','muted'], error:['Fejl','err']};
-const HASH = {printer:'printer', files:'filer', queue:'ko', console:'konsol'};
+const HASH = {printer:'printer', files:'filer', queue:'ko', console:'konsol', settings:'indstillinger'};
 
 // ---------- hjælpere
 const ic = (n, cls='') => `<svg class="i ${cls}"><use href="#i-${n}"/></svg>`;
@@ -564,7 +673,7 @@ async function api(path, opts={}){
   try{ r = await fetch(path, opts) }
   catch(e){ if(!quiet) toast('PrintHub kan ikke nås', 'err'); throw e }
   let d = null; try{ d = await r.json() }catch{}
-  if(!r.ok){ const m = (d && d.detail) || r.statusText || ('HTTP ' + r.status); if(!quiet) toast(m, 'err'); throw new Error(m) }
+  if(!r.ok){ let m = (d && d.detail) || r.statusText || ('HTTP ' + r.status); if(Array.isArray(m)) m = 'Ugyldig værdi'; if(!quiet) toast(m, 'err'); throw new Error(m) }
   return d;
 }
 // Deaktiverer knappen og viser en spinner, mens kaldet kører
@@ -600,16 +709,18 @@ document.addEventListener('keydown', e => { if(e.key === 'Escape' && $('#sheetBg
 // ---------- navigation
 function go(view){
   if(!HASH[view]) view = 'printer';
-  $$('#tabs button').forEach(b => b.classList.toggle('active', b.dataset.view === view));
+  $$('[data-view]').forEach(b => b.classList.toggle('active', b.dataset.view === view));
   $$('.view').forEach(v => v.classList.toggle('active', v.id === 'v-' + view));
   history.replaceState(null, '', '#' + HASH[view]);
   if(view === 'files') loadFiles();
   if(view === 'queue'){ loadHistory(); if(!files) loadFiles() }
   if(view === 'console') loadConsole();
+  if(view === 'settings') renderSettings();
+  if(view === 'printer') requestAnimationFrame(drawChart);
   setCamActive(view === 'printer');
   scrollTo(0, 0);
 }
-$$('#tabs button').forEach(b => b.onclick = () => go(b.dataset.view));
+$$('[data-view]').forEach(b => b.onclick = () => go(b.dataset.view));
 const viewFromHash = () => Object.keys(HASH).find(k => '#' + HASH[k] === location.hash) || 'printer';
 addEventListener('hashchange', () => go(viewFromHash()));
 document.addEventListener('click', e => {
@@ -625,6 +736,7 @@ function connectWS(){
     if(m.type === 'init'){ S = m.status || {}; Q = m.queue; setConn(m.connected); render(); renderQueue() }
     else if(m.type === 'status'){ S = m.status; render() }
     else if(m.type === 'queue'){ Q = m.queue; renderQueue() }
+    else if(m.type === 'settings'){ applySettings(m.settings) }
     else if(m.type === 'connection'){ setConn(m.connected) }
     else if(m.type === 'files_changed'){ if(files) loadFiles() }
   };
@@ -690,7 +802,9 @@ function render(){
   // temperaturer
   temp('extruder', 'tExt'); temp('heater_bed', 'tBed');
   const ex = (S.extruder||{}).target||0, bd = (S.heater_bed||{}).target||0;
-  $$('#presets button').forEach(b => { const pr = PRESETS[b.dataset.preset]; b.classList.toggle('on', pr.extruder === Math.round(ex) && pr.heater_bed === Math.round(bd)) });
+  $$('#presets button').forEach(b => b.classList.toggle('on', +b.dataset.e === Math.round(ex) && +b.dataset.b === Math.round(bd)));
+  $('#tuneCard').hidden = !active || !klOK;
+  if(active) tuneShow();
 }
 function temp(key, id){
   const h = S[key] || {}, t = h.temperature, tg = h.target || 0, tile = $(`[data-heater=${key}]`);
@@ -718,11 +832,89 @@ async function firmwareRestart(btn){
     busy(btn, () => api('/api/firmware_restart', {method:'POST'}).then(() => toast('Firmware genstartes')));
 }
 $('#klippyRestart').onclick = e => firmwareRestart(e.currentTarget);
-$$('#presets button').forEach(b => b.onclick = () => busy(b, async () => {
-  const p = PRESETS[b.dataset.preset];
-  for(const h in p) await api('/api/temp', {method:'POST', json:{heater:h, target:p[h]}});
-  toast(b.dataset.preset === 'off' ? 'Varmen er slukket' : 'Forvarmer til ' + b.textContent);
-}));
+function renderPresetSeg(){
+  const list = [...ST.presets, {name:'Sluk', extruder:0, heater_bed:0}];
+  $('#presets').innerHTML = list.map(p => `<button data-e="${p.extruder}" data-b="${p.heater_bed}" title="${p.extruder ? `${p.extruder}° / ${p.heater_bed}°` : 'Sluk dyse og bed'}">${esc(p.name)}</button>`).join('');
+  render();
+}
+$('#presets').addEventListener('click', e => { const b = e.target.closest('button'); if(!b) return;
+  busy(b, async () => {
+    await api('/api/temp', {method:'POST', json:{heater:'extruder', target:+b.dataset.e}});
+    await api('/api/temp', {method:'POST', json:{heater:'heater_bed', target:+b.dataset.b}});
+    toast(+b.dataset.e || +b.dataset.b ? `Forvarmer til ${b.textContent} (${b.dataset.e}° / ${b.dataset.b}°)` : 'Varmen er slukket');
+  });
+});
+
+// ---------- temperaturgraf (Moonrakers log + én måling hvert 5. sek.)
+const CHART_N = 240;
+let hist = null;
+async function loadTempHistory(){
+  try{
+    const d = await api('/api/temp/history', {quiet:true}); hist = {};
+    for(const k of ['extruder', 'heater_bed']){
+      const src = d[k] || {temperatures:[], targets:[]}, every = a => a.filter((_, i) => (a.length - 1 - i) % 5 === 0).slice(-CHART_N);
+      hist[k] = {t: every(src.temperatures), g: every(src.targets)};
+    }
+    drawChart();
+  }catch{ $('#chart').hidden = true; $('.chart-x').hidden = true }
+}
+setInterval(() => {
+  if(!hist) return;
+  for(const k of ['extruder', 'heater_bed']){ const h = S[k] || {};
+    if(h.temperature == null) continue;
+    hist[k].t.push(h.temperature); hist[k].g.push(h.target || 0);
+    hist[k].t = hist[k].t.slice(-CHART_N); hist[k].g = hist[k].g.slice(-CHART_N);
+  }
+  drawChart();
+}, 5000);
+function drawChart(){
+  const el = $('#chart'), w = el.clientWidth, h = el.clientHeight;
+  if(!w || !hist) return;
+  const all = ['extruder', 'heater_bed'].flatMap(k => [...hist[k].t, ...hist[k].g]);
+  const step = Math.max(...all, 0) > 150 ? 100 : 50, top = Math.max(step, Math.ceil((Math.max(...all, 0) + 5) / step) * step);
+  const pw = w - 30, x = (i, n) => (i + CHART_N - n) / (CHART_N - 1) * pw, y = v => h - 2 - v / top * (h - 4);
+  const line = (a, onlyOn) => { let d = '', pen = false;
+    a.forEach((v, i) => { if(onlyOn && !v){ pen = false; return } d += `${pen ? 'L' : 'M'}${x(i, a.length).toFixed(1)},${y(v).toFixed(1)}`; pen = true }); return d };
+  let grid = '';
+  for(let v = 0; v <= top; v += step) grid += `<line class="gl" x1="0" x2="${pw}" y1="${y(v)}" y2="${y(v)}"/><text x="${pw + 6}" y="${y(v) + 4}">${v}°</text>`;
+  el.innerHTML = `<svg width="${w}" height="${h}">${grid}
+    <path class="bed tg" d="${line(hist.heater_bed.g, true)}"/><path class="ext tg" d="${line(hist.extruder.g, true)}"/>
+    <path class="bed" d="${line(hist.heater_bed.t)}"/><path class="ext" d="${line(hist.extruder.t)}"/></svg>`;
+}
+addEventListener('resize', drawChart);
+
+// ---------- finjustering under print (samles i 0,4 sek. før det sendes)
+const TUNE = {
+  speed: {step:5, min:10, max:300, get: () => Math.round(((S.gcode_move || {}).speed_factor ?? 1) * 100), fmt: v => v + ' %'},
+  flow:  {step:1, min:50, max:150, get: () => Math.round(((S.gcode_move || {}).extrude_factor ?? 1) * 100), fmt: v => v + ' %'},
+  fan:   {step:10, min:0, max:100, get: () => Math.round(((S.fan || {}).speed || 0) * 100), fmt: v => v ? v + ' %' : 'Fra'},
+  z:     {step:0.01, min:-0.2, max:0.2, get: () => ((S.gcode_move || {}).homing_origin || [])[2] || 0,
+          fmt: v => (v < -0.0005 ? '−' : '+') + nf(Math.abs(v), 3) + ' mm'},
+};
+let tunePending = {}, tuneTimer = null;
+const tuneValue = k => k === 'z' ? TUNE.z.get() + (tunePending.z || 0) : tunePending[k] ?? TUNE[k].get();
+function tuneShow(){
+  $$('#tuneRows [data-tune]').forEach(r => { const k = r.dataset.tune, v = tuneValue(k), el = r.querySelector('.tval');
+    el.textContent = TUNE[k].fmt(v); el.classList.toggle('changed', k in tunePending);
+    r.querySelector('[data-d="-1"]').disabled = v <= TUNE[k].min + 1e-9; r.querySelector('[data-d="1"]').disabled = v >= TUNE[k].max - 1e-9 });
+  $('#tuneReset').hidden = TUNE.speed.get() === 100 && TUNE.flow.get() === 100;
+}
+$('#tuneRows').addEventListener('click', e => {
+  const b = e.target.closest('[data-d]'); if(!b) return;
+  const k = b.closest('[data-tune]').dataset.tune, t = TUNE[k], d = +b.dataset.d * t.step;
+  if(k === 'z') tunePending.z = Math.round(((tunePending.z || 0) + d) * 1000) / 1000;
+  else tunePending[k] = Math.max(t.min, Math.min(t.max, tuneValue(k) + d));
+  tuneShow(); clearTimeout(tuneTimer); tuneTimer = setTimeout(sendTune, 400);
+});
+async function sendTune(body){
+  const sent = body ? {} : {...tunePending};
+  body = body || {speed: sent.speed, flow: sent.flow, fan: sent.fan, z_adjust: sent.z};
+  if(!body.z_adjust) delete body.z_adjust;
+  try{ await api('/api/tune', {method:'POST', json:body}) }catch{}
+  for(const k in sent) if(tunePending[k] === sent[k]) delete tunePending[k];   // nyere tryk venter stadig
+  tuneShow();
+}
+$('#tuneReset').onclick = () => { tunePending = {}; sendTune({speed:100, flow:100}).then(() => toast('Hastighed og flow er 100 %')) };
 
 // temperatur-sheet
 $$('.temp').forEach(b => b.onclick = () => {
@@ -751,7 +943,7 @@ $$('.temp').forEach(b => b.onclick = () => {
 });
 
 // ---------- kamera
-let camLive = true, camTimer = null, camActive = true;
+let camLive = true, camTimer = null, camActive = true, camChosen = false;
 function camState(s){
   const c = $('#camCard'), ph = $('#camPh');
   c.classList.toggle('off', s !== 'on'); $('#camImg').hidden = s !== 'on'; $('#camCtl').hidden = s !== 'on'; ph.hidden = s === 'on';
@@ -774,7 +966,7 @@ async function startCam(){
   $('#camMode').innerHTML = camLive ? '<span class="live"></span><span>Live</span>' : `${ic('image')}<span>Hvert 5. sek.</span>`;
   camState('on');
 }
-$('#camMode').onclick = () => { camLive = !camLive; startCam(); toast(camLive ? 'Live-video' : 'Stillbillede hvert 5. sek. (sparer data)') };
+$('#camMode').onclick = () => { camLive = !camLive; camChosen = true; startCam(); toast(camLive ? 'Live-video' : 'Stillbillede hvert 5. sek. (sparer data)') };
 $('#camFull').onclick = () => { const c = $('#camCard'); (c.requestFullscreen || c.webkitRequestFullscreen || (() => window.open('/api/camera/stream'))).call(c) };
 document.addEventListener('visibilitychange', startCam);
 
@@ -963,6 +1155,68 @@ $$('[data-gcode]').forEach(b => b.onclick = async () => {
   if(await sendGcode(g, b)) toast(b.textContent.trim() + ' sendt');
 });
 $('#fwRestart').onclick = e => firmwareRestart(e.currentTarget);
+// ---------- indstillinger (gemt i Moonrakers database, namespace printhub)
+const EVENT_DA = {started:'Print startet', paused:'Sat på pause', resumed:'Genoptaget', complete:'Færdig',
+  cancelled:'Annulleret', error:'Fejl', shutdown:'Klipper stoppet'};
+async function loadSettings(){
+  try{ const d = await api('/api/settings', {quiet:true}); stMeta = d; applySettings(d.settings) }catch{}
+}
+function applySettings(st){
+  ST = st; renderPresetSeg();
+  if(!camChosen && camLive !== (st.camera === 'live')){ camLive = st.camera === 'live'; startCam() }
+  if($('#v-settings').classList.contains('active') && !$('#v-settings').contains(document.activeElement)) renderSettings();
+}
+async function saveSettings(){
+  try{ const d = await api('/api/settings', {method:'PUT', json:ST}); applySettings(d.settings) }
+  catch{ loadSettings().then(renderSettings) }
+}
+function renderSettings(){
+  const ch = stMeta.channels || {};
+  $('#chanRows').innerHTML = [['ntfy', 'ntfy'], ['ha', 'Home Assistant']].map(([k, n]) =>
+    `<div class="srow"><span class="lbl">${n}</span><span class="state" ${ch[k] ? 'data-on' : ''}>${ch[k] ? 'Sat op' : 'Ikke sat op'}</span></div>`).join('');
+  $('#eventRows').innerHTML = (stMeta.events || Object.keys(EVENT_DA)).map(e =>
+    `<label class="srow"><span class="lbl">${EVENT_DA[e] || e}</span><input type="checkbox" class="switch" data-event="${e}" ${ST.events[e] !== false ? 'checked' : ''}></label>`).join('');
+  $('#presetRows').innerHTML = `<div class="prow head"><span>Navn</span><span>Dyse °</span><span>Bed °</span><span></span></div>` +
+    ST.presets.map((p, i) => `<div class="prow" data-i="${i}">
+      <input class="field" data-k="name" value="${esc(p.name)}" maxlength="16" aria-label="Navn">
+      <input class="field" data-k="extruder" type="number" inputmode="numeric" min="0" max="300" value="${p.extruder}" aria-label="Dyse">
+      <input class="field" data-k="heater_bed" type="number" inputmode="numeric" min="0" max="120" value="${p.heater_bed}" aria-label="Bed">
+      <button class="iconbtn sm" data-del="${i}" aria-label="Slet preset">${ic('x')}</button></div>`).join('');
+  $('#addPreset').disabled = ST.presets.length >= 5;
+  $('#notifyTest2').disabled = !ch.ntfy && !ch.ha;
+  $$('#camSeg button').forEach(b => b.classList.toggle('on', b.dataset.cam === ST.camera));
+  let theme = 'auto'; try{ theme = localStorage.getItem('printhub.theme') || 'auto' }catch{}
+  $$('#themeSeg button').forEach(b => b.classList.toggle('on', b.dataset.themeSet === theme));
+}
+$('#eventRows').addEventListener('change', e => { const c = e.target.closest('[data-event]'); if(c){ ST.events[c.dataset.event] = c.checked; saveSettings() } });
+$('#presetRows').addEventListener('change', e => {
+  const inp = e.target.closest('[data-k]'); if(!inp) return;
+  const p = ST.presets[+inp.closest('[data-i]').dataset.i], k = inp.dataset.k;
+  const v = k === 'name' ? inp.value.trim() : Math.round(+inp.value);
+  const ok = k === 'name' ? v.length > 0 : v >= 0 && v <= (k === 'extruder' ? 300 : 120);
+  if(!ok){ toast(k === 'name' ? 'Navnet må ikke være tomt' : `Mellem 0 og ${k === 'extruder' ? 300 : 120}°`, 'err'); renderSettings(); return }
+  p[k] = v; saveSettings();
+});
+$('#presetRows').addEventListener('click', async e => {
+  const b = e.target.closest('[data-del]'); if(!b) return;
+  const p = ST.presets[+b.dataset.del];
+  if(!await ask({icon:'trash', title:`Slet ${p.name}?`, text:'Presettet fjernes fra temperaturkortet.', ok:'Slet', danger:true})) return;
+  ST.presets.splice(+b.dataset.del, 1); renderSettings(); saveSettings();
+});
+$('#addPreset').onclick = () => {
+  if(ST.presets.length >= 5) return;
+  ST.presets.push({name:'Ny', extruder:200, heater_bed:60}); renderSettings(); saveSettings();
+  const rows = $$('#presetRows .prow[data-i] input[data-k=name]'); rows[rows.length - 1].select();
+};
+$('#camSeg').addEventListener('click', e => { const b = e.target.closest('[data-cam]'); if(!b) return;
+  ST.camera = b.dataset.cam; camChosen = false; renderSettings(); saveSettings() });
+$('#themeSeg').addEventListener('click', e => { const b = e.target.closest('[data-theme-set]'); if(!b) return;
+  const t = b.dataset.themeSet;
+  try{ t === 'auto' ? localStorage.removeItem('printhub.theme') : localStorage.setItem('printhub.theme', t) }catch{}
+  if(t === 'auto') delete document.documentElement.dataset.theme; else document.documentElement.dataset.theme = t;
+  renderSettings(); drawChart();
+});
+$('#notifyTest2').onclick = e => busy(e.currentTarget, () => api('/api/notify/test', {method:'POST'}).then(() => toast('Testbesked sendt')));
 $('#notifyTest').onclick = e => busy(e.currentTarget, () => api('/api/notify/test', {method:'POST'}).then(() => toast('Testbesked sendt')));
 
 // ---------- start
@@ -974,6 +1228,7 @@ $('#notifyTest').onclick = e => busy(e.currentTarget, () => api('/api/notify/tes
     $('#title').textContent = cfg.printer_name; document.title = cfg.printer_name + ' · PrintHub';
     if(cfg.obico_url){ const o = $('#obicoBtn'); o.href = cfg.obico_url; o.hidden = false }
   }catch{}
+  renderPresetSeg(); loadSettings(); loadTempHistory();
   connectWS();
   if(start === 'printer') startCam(); else go(start);
   loadFiles();
