@@ -4,159 +4,437 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="theme-color" content="#0b0d10">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#f2f2f7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
 <title>PrintHub</title>
 <link rel="manifest" href="/static/manifest.json">
+<link rel="icon" href="/static/icon.svg">
 <link rel="apple-touch-icon" href="/static/icon.svg">
 <style>
+/* ---------------------------------------------------------------- tokens */
 :root{
-  --bg:#f2f2f7; --card:#ffffff; --card2:#f7f7fa; --text:#111; --muted:#6b6b73; --line:#e3e3e8;
-  --accent:#ff6b2c; --accent-soft:#ffe9df; --ok:#22a55b; --warn:#e6a100; --err:#e5383b; --blue:#2f7cf6;
-  --radius:18px; --shadow:0 1px 2px rgba(0,0,0,.04),0 4px 16px rgba(0,0,0,.05);
+  color-scheme:light dark;
+  --s1:4px;--s2:8px;--s3:12px;--s4:16px;--s5:24px;--s6:32px;
+  --r-card:22px;--r-inner:14px;--r-btn:14px;
+  --f-large:34px;--f-title:22px;--f-head:17px;--f-body:15px;--f-sub:13px;--f-cap:12px;
+  --bg:#f2f2f7;--card:#fff;--card-elev:#fff;--seg-on:#fff;
+  --fill:rgba(118,118,128,.12);--fill2:rgba(118,118,128,.07);
+  --text:#1c1c1e;--muted:#6e6e73;--faint:#aeaeb2;--line:rgba(60,60,67,.13);
+  --accent:#f2601f;--accent-soft:rgba(255,107,44,.13);
+  --ok:#28a745;--ok-soft:rgba(52,199,89,.14);--warn:#c77700;--warn-soft:rgba(255,159,10,.16);
+  --err:#e5352b;--err-soft:rgba(255,59,48,.12);
+  --shadow:0 1px 2px rgba(0,0,0,.04),0 6px 20px rgba(0,0,0,.045);
+  --tabh:58px;
 }
 @media (prefers-color-scheme:dark){:root{
-  --bg:#0b0d10; --card:#16191e; --card2:#1d2127; --text:#f2f3f5; --muted:#8d939c; --line:#262a31;
-  --accent-soft:#3a2216; --shadow:none;
+  --bg:#000;--card:#1c1c1e;--card-elev:#2c2c2e;--seg-on:#636366;
+  --fill:rgba(118,118,128,.26);--fill2:rgba(118,118,128,.15);
+  --text:#f5f5f7;--muted:#98989f;--faint:#636366;--line:rgba(84,84,88,.55);
+  --accent:#ff7a3d;--accent-soft:rgba(255,122,61,.18);
+  --ok:#30d158;--ok-soft:rgba(48,209,88,.16);--warn:#ffb340;--warn-soft:rgba(255,159,10,.18);
+  --err:#ff453a;--err-soft:rgba(255,69,58,.18);
+  --shadow:none;
 }}
+
+/* ---------------------------------------------------------------- basis */
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{margin:0;background:var(--bg);color:var(--text);font:15px/1.4 -apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif}
-button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
-.wrap{max-width:1100px;margin:0 auto;padding:12px 16px calc(90px + env(safe-area-inset-bottom))}
-header{display:flex;align-items:center;gap:10px;padding:calc(10px + env(safe-area-inset-top)) 16px 6px;max-width:1100px;margin:0 auto}
-header h1{font-size:26px;font-weight:700;margin:0;flex:1;letter-spacing:-.02em}
-.dot{width:9px;height:9px;border-radius:50%;background:var(--err);display:inline-block}
-.dot.on{background:var(--ok)}
-.pill{font-size:12px;font-weight:600;padding:4px 10px;border-radius:99px;background:var(--card2);color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
-.pill.printing{background:var(--accent-soft);color:var(--accent)}
-.pill.complete{background:#dff5e8;color:var(--ok)} .pill.error{background:#fde2e2;color:var(--err)}
-.pill.paused{background:#fff3d1;color:#a87400}
-@media (prefers-color-scheme:dark){.pill.complete{background:#11301f}.pill.error{background:#3a1416}.pill.paused{background:#3a2e10;color:#f0c14b}}
-.iconbtn{width:38px;height:38px;border-radius:12px;background:var(--card);box-shadow:var(--shadow);display:grid;place-items:center;font-size:18px;text-decoration:none;color:var(--text)}
-.grid{display:grid;gap:14px}
-@media (min-width:860px){.grid.two{grid-template-columns:1.3fr 1fr}}
-.card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px}
-.card h2{font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:0 0 10px}
-.cam{padding:0;overflow:hidden;position:relative;background:#000;aspect-ratio:4/3}
-.cam img{width:100%;height:100%;object-fit:contain;display:block}
-.cam .camctl{position:absolute;right:10px;bottom:10px;display:flex;gap:6px}
-.cam .camctl button{background:rgba(0,0,0,.55);color:#fff;border-radius:10px;padding:6px 10px;font-size:13px;backdrop-filter:blur(8px)}
-.cam .nocam{position:absolute;inset:0;display:grid;place-items:center;color:#999;font-size:14px}
-.job{display:flex;gap:14px;align-items:center}
-.job .thumb{width:72px;height:72px;border-radius:14px;background:var(--card2);object-fit:contain;flex:none}
-.job .name{font-weight:600;word-break:break-word}
-.job .meta{color:var(--muted);font-size:13px}
-.bar{height:8px;border-radius:99px;background:var(--card2);overflow:hidden;margin:12px 0 6px}
-.bar>div{height:100%;background:var(--accent);border-radius:99px;transition:width .6s}
-.row{display:flex;gap:10px;align-items:center}
-.row.between{justify-content:space-between}
-.btn{padding:11px 16px;border-radius:12px;background:var(--card2);font-weight:600;flex:1;text-align:center}
+html,body{margin:0;background:var(--bg);color:var(--text);
+  font:var(--f-body)/1.4 -apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI Variable Text","Segoe UI",Roboto,sans-serif;
+  -webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit;border:0;background:none;cursor:pointer;padding:0}
+a{color:inherit}
+[hidden]{display:none!important}
+svg.i{width:20px;height:20px;flex:none;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.muted{color:var(--muted)} .center{text-align:center}
+.sp{flex:1}
+.num{font-variant-numeric:tabular-nums}
+
+/* ---------------------------------------------------------------- ramme */
+.app{max-width:1120px;margin:0 auto;padding:0 var(--s4) calc(var(--tabh) + env(safe-area-inset-bottom) + var(--s5))}
+header.top{display:flex;align-items:flex-end;gap:var(--s3);padding:calc(env(safe-area-inset-top) + 18px) 4px var(--s4)}
+.titles{flex:1;min-width:0}
+h1{font-size:var(--f-large);font-weight:700;letter-spacing:-.025em;line-height:1.1;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.status{display:flex;align-items:center;gap:7px;margin-top:5px;font-size:var(--f-body);color:var(--muted);font-weight:500}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--faint);flex:none}
+[data-tone=ok] .dot,.dot[data-tone=ok]{background:var(--ok)}
+[data-tone=accent] .dot{background:var(--accent)}
+[data-tone=warn] .dot{background:var(--warn)}
+[data-tone=err] .dot{background:var(--err)}
+.top-acts{display:flex;gap:var(--s2);align-items:center;align-self:flex-start}
+.iconbtn{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;background:var(--card);box-shadow:var(--shadow);color:var(--text);text-decoration:none;flex:none}
+@media (prefers-color-scheme:dark){.iconbtn{background:var(--fill)}}
+.iconbtn.sm{width:32px;height:32px;background:var(--fill);box-shadow:none}
+.iconbtn.sm svg.i{width:17px;height:17px}
+.estop{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:40px;min-width:40px;border-radius:20px;background:var(--err-soft);color:var(--err);font-weight:600;font-size:14px}
+.estop .lbl,.iconbtn .lbl{display:none}
+.offline{position:sticky;top:0;z-index:30;display:flex;align-items:center;justify-content:center;gap:8px;
+  padding:calc(env(safe-area-inset-top) + 8px) 16px 8px;background:var(--err);color:#fff;font-size:var(--f-sub);font-weight:600}
+.offline svg.i{width:16px;height:16px}
+
+/* faner: bund-bar på mobil, segmenteret kontrol i toppen på desktop */
+.tabs{position:fixed;left:0;right:0;bottom:0;z-index:20;display:flex;padding:6px 8px calc(4px + env(safe-area-inset-bottom));
+  background:color-mix(in srgb,var(--bg) 80%,transparent);-webkit-backdrop-filter:saturate(180%) blur(20px);backdrop-filter:saturate(180%) blur(20px);
+  border-top:.5px solid var(--line)}
+.tabs button{flex:1;position:relative;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:10.5px;font-weight:600;color:var(--muted);padding:3px 0}
+.tabs svg.i{width:25px;height:25px;stroke-width:1.8}
+.tabs button.active{color:var(--accent)}
+.badge{position:absolute;top:0;left:calc(50% + 6px);min-width:17px;height:17px;padding:0 5px;border-radius:9px;background:var(--accent);color:#fff;font-size:11px;font-weight:700;line-height:17px;text-align:center}
+
+/* ---------------------------------------------------------------- kort */
+.view{display:none}.view.active{display:block;animation:fade .2s ease}
+@keyframes fade{from{opacity:0;transform:translateY(4px)}}
+.cols{display:grid;gap:var(--s4)}
+.col{display:grid;gap:var(--s4);align-content:start;min-width:0}
+.card{background:var(--card);border-radius:var(--r-card);box-shadow:var(--shadow);padding:var(--s4);min-width:0}
+.card-h{display:flex;align-items:center;gap:var(--s2);min-height:32px;margin-bottom:var(--s3)}
+.card-h h2{font-size:var(--f-head);font-weight:600;letter-spacing:-.01em;margin:0}
+.card-h .hint{font-size:var(--f-sub);color:var(--muted)}
+.link{color:var(--accent);font-weight:600;font-size:var(--f-body)}
+.pill{font-size:var(--f-cap);font-weight:600;padding:3px 9px;border-radius:99px;background:var(--fill);color:var(--muted)}
+.pill[data-tone=ok]{background:var(--ok-soft);color:var(--ok)}
+.pill[data-tone=warn]{background:var(--warn-soft);color:var(--warn)}
+
+/* knapper */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:48px;padding:0 18px;border-radius:var(--r-btn);
+  background:var(--fill);color:var(--text);font-size:16px;font-weight:600;flex:1;transition:transform .12s,opacity .2s;position:relative}
+.btn svg.i{width:19px;height:19px}
 .btn.primary{background:var(--accent);color:#fff}
 .btn.danger{background:var(--err);color:#fff}
-.btn.small{flex:none;padding:7px 12px;font-size:13px;border-radius:10px}
-.btn:disabled{opacity:.4}
-.temps{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.temp{background:var(--card2);border-radius:14px;padding:12px;text-align:left}
-.temp .lbl{font-size:12px;color:var(--muted);font-weight:600}
-.temp .val{font-size:28px;font-weight:700;letter-spacing:-.02em}
-.temp .tgt{font-size:13px;color:var(--muted)}
-.temp.heating .val{color:var(--accent)}
-.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
-.stat{background:var(--card2);border-radius:12px;padding:8px 10px}
-.stat b{display:block;font-size:16px}
-.stat span{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.btn.danger-soft{background:var(--err-soft);color:var(--err)}
+.btn.small{min-height:34px;padding:0 12px;font-size:14px;border-radius:10px;flex:none}
+.btn:disabled{opacity:.4;cursor:default}
+.btn:active:not(:disabled),.iconbtn:active,.tile:active,.item:active,.opt:active{transform:scale(.97)}
+.btn.busy{color:transparent!important}
+.btn.busy::after{content:"";position:absolute;width:18px;height:18px;border-radius:50%;border:2.5px solid currentColor;border-color:var(--muted) var(--muted) var(--muted) transparent;animation:spin .7s linear infinite}
+.btn.primary.busy::after,.btn.danger.busy::after{border-color:#fff #fff #fff transparent}
+@keyframes spin{to{transform:rotate(360deg)}}
+.row{display:flex;gap:var(--s2);align-items:center}
+
+/* segmenteret kontrol */
+.seg{display:flex;background:var(--fill);border-radius:10px;padding:2px;gap:2px}
+.seg button{flex:1;padding:5px 12px;border-radius:8px;font-size:var(--f-sub);font-weight:600;color:var(--text);white-space:nowrap}
+.seg button.on{background:var(--seg-on);box-shadow:0 1px 3px rgba(0,0,0,.12)}
+
+/* felter */
+.field{width:100%;height:44px;font:inherit;font-size:16px;color:var(--text);background:var(--fill2);border:0;border-radius:12px;padding:0 14px;outline:none}
+.field:focus{box-shadow:0 0 0 2px var(--accent-soft)}
+.search{position:relative;margin-bottom:var(--s2)}
+.search svg.i{position:absolute;left:12px;top:50%;transform:translateY(-50%);width:17px;height:17px;color:var(--muted)}
+.search .field{padding-left:38px}
+
+/* ---------------------------------------------------------------- kamera */
+.cam{position:relative;padding:0;overflow:hidden;aspect-ratio:16/9;background:#0c0c0e}
+.cam.off{background:var(--card)}
+.cam img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}
+.cam-ph{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;text-align:center;padding:var(--s4);color:var(--muted);font-size:var(--f-sub)}
+.cam-ph>svg.i{width:32px;height:32px;color:var(--faint);margin-bottom:6px;stroke-width:1.7}
+.cam-ph b{color:var(--text);font-size:var(--f-body);font-weight:600}
+.cam-ph .btn{margin-top:10px}
+.cam-ctl{position:absolute;left:10px;right:10px;bottom:10px;display:flex;gap:8px;align-items:center}
+.glass{display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 12px;border-radius:16px;background:rgba(20,20,22,.5);color:#fff;font-size:var(--f-sub);font-weight:600;
+  -webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px)}
+.glass svg.i{width:16px;height:16px}
+.glass.icon{width:32px;padding:0;justify-content:center}
+.live{width:7px;height:7px;border-radius:50%;background:#ff453a}
+.cam:fullscreen{border-radius:0}
+
+/* ---------------------------------------------------------------- job */
+.job-top{display:flex;align-items:center;gap:14px}
+.thumb{width:52px;height:52px;border-radius:12px;background:var(--fill2);display:grid;place-items:center;flex:none;overflow:hidden;color:var(--faint)}
+.thumb img{width:100%;height:100%;object-fit:contain}
+.thumb svg.i{width:24px;height:24px;stroke-width:1.7}
+.job-top .thumb{width:60px;height:60px}
+.job-txt{flex:1;min-width:0}
+.eyebrow{font-size:var(--f-sub);font-weight:600;color:var(--muted)}
+.eyebrow[data-tone=accent]{color:var(--accent)} .eyebrow[data-tone=ok]{color:var(--ok)}
+.eyebrow[data-tone=warn]{color:var(--warn)} .eyebrow[data-tone=err]{color:var(--err)}
+.job-name{font-size:var(--f-head);font-weight:600;line-height:1.25;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;word-break:break-word}
+.job-meta{font-size:var(--f-sub);color:var(--muted);margin-top:2px}
+.big{font-size:44px;font-weight:700;letter-spacing:-.035em;line-height:1;font-variant-numeric:tabular-nums;white-space:nowrap}
+.big small{font-size:22px;font-weight:600;letter-spacing:0;margin-left:2px;color:var(--muted)}
+.bar{height:6px;border-radius:3px;background:var(--fill);overflow:hidden}
+.bar i{display:block;height:100%;width:0;background:var(--accent);border-radius:3px;transition:width .6s}
+.job .bar{margin-top:var(--s4)}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--s2);margin:var(--s4) 0}
+.stats>div{display:flex;flex-direction:column;gap:1px;min-width:0}
+.stats .lbl{font-size:var(--f-cap);color:var(--muted);font-weight:500}
+.stats b{font-size:22px;font-weight:600;letter-spacing:-.02em;font-variant-numeric:tabular-nums;white-space:nowrap}
+.stats b small{font-size:14px;font-weight:600;color:var(--muted);letter-spacing:0}
+.job:not([data-mode=active]) .active-only{display:none}
+.job:not([data-mode=idle]) .idle-only{display:none}
+.idle-only{margin-top:var(--s4)}
+.alert{display:flex;align-items:center;gap:var(--s3);margin-top:var(--s4);padding:var(--s3);border-radius:var(--r-inner);background:var(--err-soft);color:var(--err)}
+.alert div{flex:1;min-width:0;display:flex;flex-direction:column;font-size:var(--f-sub)}
+.alert b{font-size:var(--f-body)}
+.alert .btn{background:var(--err);color:#fff}
+
+/* ---------------------------------------------------------------- temperaturer */
+.temps{display:grid;grid-template-columns:1fr 1fr;gap:var(--s3)}
+.temp{display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding:var(--s3) 14px 14px;border-radius:var(--r-inner);background:var(--fill2);text-align:left;transition:transform .12s}
+.temp:active{transform:scale(.97)}
+.temp .lbl{display:flex;align-items:center;gap:6px;font-size:var(--f-sub);font-weight:600;color:var(--muted)}
+.temp .lbl svg.i{width:16px;height:16px}
+.temp .val{font-size:34px;font-weight:700;letter-spacing:-.03em;line-height:1.15;font-variant-numeric:tabular-nums}
+.temp .val small{font-size:inherit;font-weight:500;color:var(--muted);margin-left:1px}
+.temp .tgt{font-size:var(--f-sub);color:var(--muted)}
+.temp[data-on] .lbl,.temp[data-on] .tgt{color:var(--accent)}
+.temp[data-reached] .tgt{color:var(--ok)}
+.temp .bar{width:100%;height:4px;margin-top:10px}
+.temp[data-reached] .bar i{background:var(--ok)}
+
+/* ---------------------------------------------------------------- lister */
 .list{display:flex;flex-direction:column}
-.item{display:flex;gap:12px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line)}
-.item:last-child{border:0}
-.item img,.item .ph{width:52px;height:52px;border-radius:12px;background:var(--card2);object-fit:contain;flex:none;display:grid;place-items:center;font-size:22px}
-.item .info{flex:1;min-width:0}
-.item .info .name{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.item .info .meta{font-size:12px;color:var(--muted)}
-.item .acts{display:flex;gap:6px}
-.empty{color:var(--muted);text-align:center;padding:24px 0}
-.tabs{position:fixed;left:0;right:0;bottom:0;background:color-mix(in srgb,var(--card) 88%,transparent);backdrop-filter:blur(20px);border-top:1px solid var(--line);display:flex;justify-content:space-around;padding:6px 0 calc(6px + env(safe-area-inset-bottom));z-index:10}
-.tabs button{display:flex;flex-direction:column;align-items:center;font-size:11px;color:var(--muted);gap:2px;padding:4px 14px}
-.tabs button .ic{font-size:21px}
-.tabs button.active{color:var(--accent)}
-.view{display:none}.view.active{display:block}
-.console{font:12px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--card2);border-radius:12px;padding:10px;height:320px;overflow:auto;white-space:pre-wrap}
-.console .cmd{color:var(--blue)}
-input[type=text],input[type=number]{font:inherit;color:var(--text);background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:10px 12px;width:100%}
-.sheet-bg{position:fixed;inset:0;background:rgba(0,0,0,.4);display:none;z-index:20;align-items:flex-end;justify-content:center}
+.item{display:flex;align-items:center;gap:var(--s3);width:100%;padding:10px 0;text-align:left;position:relative;transition:transform .12s}
+.item+.item::before{content:"";position:absolute;top:0;left:64px;right:0;border-top:.5px solid var(--line)}
+.info{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
+.name{font-size:16px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.meta{font-size:var(--f-sub);color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chev{color:var(--faint)}
+.item-acts{display:flex;gap:6px}
+.pos{font-size:var(--f-head);font-weight:600;color:var(--muted)}
+.st{width:52px;height:52px;border-radius:12px;display:grid;place-items:center;flex:none;background:var(--fill2);color:var(--muted)}
+.st[data-tone=ok]{background:var(--ok-soft);color:var(--ok)}
+.st[data-tone=err]{background:var(--err-soft);color:var(--err)}
+.st[data-tone=accent]{background:var(--accent-soft);color:var(--accent)}
+.empty{display:flex;flex-direction:column;align-items:center;text-align:center;gap:4px;padding:var(--s6) var(--s3);color:var(--muted);font-size:var(--f-sub)}
+.empty>svg.i{width:34px;height:34px;color:var(--faint);margin-bottom:8px;stroke-width:1.6}
+.empty b{color:var(--text);font-size:16px;font-weight:600}
+.empty .btn{margin-top:var(--s3)}
+.empty[data-tone=err]>svg.i{color:var(--err)}
+.skel{display:block;border-radius:6px;background:linear-gradient(90deg,var(--fill2) 30%,var(--fill) 50%,var(--fill2) 70%);background-size:300% 100%;animation:shimmer 1.3s infinite linear}
+@keyframes shimmer{from{background-position:100% 0}to{background-position:0 0}}
+
+/* ---------------------------------------------------------------- konsol */
+.console{font:12.5px/1.6 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;background:var(--fill2);border-radius:var(--r-inner);padding:var(--s3);
+  height:300px;overflow:auto;white-space:pre-wrap;word-break:break-word;color:var(--muted)}
+.console .cmd{color:var(--text);font-weight:600} .console .cmd::before{content:"› ";color:var(--accent)}
+.console .bad{color:var(--err)}
+.send{display:flex;gap:var(--s2);margin-top:var(--s3)}
+.send .btn{flex:none;width:48px;min-height:44px;padding:0;border-radius:12px}
+.tiles{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.tile{display:flex;flex-direction:column;align-items:flex-start;gap:10px;padding:14px;border-radius:var(--r-inner);background:var(--fill2);text-align:left;font-weight:600;transition:transform .12s}
+.tile svg.i{width:22px;height:22px;color:var(--accent)}
+.tile span{font-size:var(--f-cap);color:var(--muted);font-weight:500;margin-top:-8px}
+
+/* ---------------------------------------------------------------- sheets */
+.sheet-bg{position:fixed;inset:0;z-index:40;display:none;align-items:flex-end;justify-content:center;background:rgba(0,0,0,0);transition:background .25s}
 .sheet-bg.open{display:flex}
-.sheet{background:var(--card);width:100%;max-width:520px;border-radius:22px 22px 0 0;padding:18px 18px calc(18px + env(safe-area-inset-bottom))}
-.sheet h3{margin:0 0 12px}
-.chips{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}
-.chip{padding:8px 14px;border-radius:99px;background:var(--card2);font-weight:600;font-size:14px}
-.toast{position:fixed;left:50%;top:calc(14px + env(safe-area-inset-top));transform:translateX(-50%) translateY(-120px);background:var(--text);color:var(--bg);padding:10px 16px;border-radius:12px;font-weight:600;z-index:30;transition:transform .3s;max-width:90%}
-.toast.show{transform:translateX(-50%) translateY(0)}
-.estop{background:var(--err);color:#fff;font-weight:800;border-radius:12px;padding:0 12px;height:38px;font-size:13px;letter-spacing:.03em}
-.drop{display:block;cursor:pointer;border:2px dashed var(--line);border-radius:14px;padding:16px;text-align:center;color:var(--muted);margin-bottom:10px}
-.drop.over{border-color:var(--accent);color:var(--accent)}
-.muted{color:var(--muted)}
-.offline{background:var(--err);color:#fff;text-align:center;padding:6px;font-size:13px;font-weight:600;display:none}
-.offline.show{display:block}
+.sheet-bg.in{background:rgba(0,0,0,.4)}
+.sheet{width:100%;max-width:560px;max-height:92vh;overflow:auto;background:var(--card-elev);border-radius:24px 24px 0 0;
+  padding:8px 20px calc(20px + env(safe-area-inset-bottom));transform:translateY(100%);transition:transform .3s cubic-bezier(.2,.85,.25,1)}
+.sheet-bg.in .sheet{transform:none}
+.grabber{width:36px;height:5px;border-radius:3px;background:var(--fill);margin:0 auto 14px}
+.sheet h3{font-size:var(--f-title);font-weight:700;letter-spacing:-.02em;margin:4px 0 4px;word-break:break-word}
+.sheet p{margin:0;color:var(--muted)}
+.sheet .acts{display:grid;gap:10px;margin-top:var(--s5)}
+.sheet .acts.two{grid-template-columns:1fr 1fr}
+.hero{width:60px;height:60px;border-radius:50%;display:grid;place-items:center;margin:8px auto 14px;background:var(--accent-soft);color:var(--accent)}
+.hero svg.i{width:30px;height:30px}
+.hero.danger{background:var(--err-soft);color:var(--err)}
+.sheet-h{display:flex;align-items:baseline;justify-content:space-between;gap:var(--s3)}
+.stepper{display:flex;align-items:center;justify-content:center;gap:var(--s4);margin:var(--s5) 0 6px}
+.stepper .iconbtn{width:52px;height:52px;background:var(--fill);box-shadow:none}
+.stepval{display:flex;align-items:baseline;font-size:56px;font-weight:700;letter-spacing:-.04em;font-variant-numeric:tabular-nums}
+.stepval input{width:3.2ch;font:inherit;color:var(--text);background:none;border:0;text-align:right;outline:none;padding:0;-moz-appearance:textfield}
+.stepval input::-webkit-outer-spin-button,.stepval input::-webkit-inner-spin-button{-webkit-appearance:none}
+.stepval span{color:var(--muted);font-size:inherit;font-weight:500}
+.sheet .seg{margin-top:var(--s5)}
+.sheet .seg button{padding:8px 4px}
+.detail-thumb{width:168px;height:168px;margin:4px auto 14px;border-radius:20px;background:var(--fill2);display:grid;place-items:center;overflow:hidden;color:var(--faint)}
+.detail-thumb img{width:100%;height:100%;object-fit:contain}
+.detail-thumb svg.i{width:48px;height:48px;stroke-width:1.4}
+.facts{display:grid;grid-template-columns:1fr 1fr;gap:var(--s2);margin:var(--s4) 0 0}
+.facts div{background:var(--fill2);border-radius:12px;padding:10px 12px}
+.facts div:last-child:nth-child(odd){grid-column:1/-1}
+.facts dt{font-size:var(--f-cap);color:var(--muted)}
+.facts dd{margin:0;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.note{font-size:var(--f-sub);color:var(--muted);text-align:center;margin-top:-2px}
+.opt{display:flex;align-items:center;gap:14px;width:100%;padding:14px;border-radius:var(--r-inner);background:var(--fill2);text-align:left;transition:transform .12s}
+.opt svg.i{color:var(--accent);width:22px;height:22px}
+.opt b{display:block;font-weight:600}
+.opt span{font-size:var(--f-sub);color:var(--muted)}
+.opt:disabled{opacity:.4}
+
+/* ---------------------------------------------------------------- toast, upload, drop */
+.toast{position:fixed;left:50%;top:calc(12px + env(safe-area-inset-top));z-index:50;display:flex;align-items:center;gap:8px;max-width:calc(100% - 32px);
+  transform:translate(-50%,-140%);padding:11px 16px;border-radius:14px;background:var(--card-elev);color:var(--text);font-weight:600;font-size:var(--f-body);
+  box-shadow:0 8px 30px rgba(0,0,0,.18);transition:transform .3s cubic-bezier(.2,.85,.25,1),visibility .3s;visibility:hidden}
+.toast.show{transform:translate(-50%,0);visibility:visible}
+.toast svg.i{color:var(--ok)} .toast.err svg.i{color:var(--err)}
+.upbar{position:fixed;left:var(--s4);right:var(--s4);bottom:calc(var(--tabh) + env(safe-area-inset-bottom) + 12px);z-index:25;
+  padding:12px 14px;border-radius:16px;background:var(--card-elev);box-shadow:0 8px 30px rgba(0,0,0,.18)}
+.upbar .row{font-size:var(--f-sub);font-weight:600;margin-bottom:8px}
+.upbar .row span:first-child{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dropzone{position:fixed;inset:0;z-index:45;display:none;place-items:center;padding:24px;background:color-mix(in srgb,var(--bg) 70%,transparent);
+  -webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
+.dropzone.show{display:grid}
+.dropzone>div{width:100%;max-width:520px;aspect-ratio:16/10;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;
+  border:2px dashed var(--accent);border-radius:28px;background:var(--card);color:var(--muted);pointer-events:none}
+.dropzone svg.i{width:40px;height:40px;color:var(--accent);margin-bottom:6px}
+.dropzone b{font-size:var(--f-title);color:var(--text)}
+
+/* ---------------------------------------------------------------- desktop */
+@media (min-width:900px){
+  .app{padding:0 var(--s6) 48px}
+  header.top{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;padding-top:28px;padding-bottom:var(--s5)}
+  .tabs{position:static;justify-self:center;padding:3px;gap:2px;border:0;border-radius:12px;background:var(--fill);-webkit-backdrop-filter:none;backdrop-filter:none}
+  .tabs button{flex-direction:row;gap:7px;padding:7px 16px;border-radius:9px;font-size:14px;color:var(--text)}
+  .tabs svg.i{width:18px;height:18px;stroke-width:2}
+  .tabs button.active{background:var(--seg-on);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.12)}
+  .tabs button.active svg.i{color:var(--accent)}
+  .badge{position:static;margin-left:2px;height:18px;line-height:18px}
+  .top-acts{justify-self:end;align-self:center}
+  .iconbtn.labeled{width:auto;border-radius:20px;padding:0 14px 0 12px;gap:6px;display:inline-flex;align-items:center;font-weight:600;font-size:14px}
+  .iconbtn.labeled .lbl{display:inline}
+  .estop{padding:0 16px 0 13px}
+  .estop .lbl{display:inline}
+  .cols{grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);align-items:start}
+  .cols.even{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+  .card{padding:20px}
+  .console{height:440px}
+  .upbar{left:auto;right:var(--s6);bottom:var(--s6);width:340px}
+  .sheet-bg{align-items:center}
+  .sheet{max-width:440px;border-radius:24px;padding:24px;transform:scale(.96);opacity:0;transition:transform .2s,opacity .2s}
+  .sheet-bg.in .sheet{transform:none;opacity:1}
+  .grabber{display:none}
+}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{transition:none!important;animation:none!important}}
 </style>
 </head>
 <body>
-<div class="offline" id="offline">Ingen forbindelse til printeren – prøver igen…</div>
-<header>
-  <span class="dot" id="dot"></span>
-  <h1 id="title">PrintHub</h1>
-  <span class="pill" id="statePill">–</span>
-  <a class="iconbtn" id="obicoBtn" href="#" target="_blank" title="Obico (AI-overvågning)" style="display:none">🧠</a>
-  <button class="estop" id="estopBtn" title="Nødstop">STOP</button>
-</header>
+<!-- Ikoner: Lucide (lucide.dev, ISC-licens), kopieret ind som symboler -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-printer" viewBox="0 0 24 24"><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><path d="M6 9V3a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v6"/><rect x="6" y="14" width="12" height="8" rx="1"/></symbol>
+  <symbol id="i-folder" viewBox="0 0 24 24"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></symbol>
+  <symbol id="i-queue" viewBox="0 0 24 24"><path d="M10 12h11"/><path d="M10 18h11"/><path d="M10 6h11"/><path d="M4 10h2"/><path d="M4 6h1v4"/><path d="M6 18H4c0-1 2-2 2-3s-1-1.5-2-1"/></symbol>
+  <symbol id="i-terminal" viewBox="0 0 24 24"><polyline points="4 17 10 11 4 5"/><line x1="12" x2="20" y1="19" y2="19"/></symbol>
+  <symbol id="i-play" viewBox="0 0 24 24"><polygon points="6 3 20 12 6 21 6 3"/></symbol>
+  <symbol id="i-pause" viewBox="0 0 24 24"><rect x="14" y="4" width="4" height="16" rx="1"/><rect x="6" y="4" width="4" height="16" rx="1"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="M12 5v14"/></symbol>
+  <symbol id="i-minus" viewBox="0 0 24 24"><path d="M5 12h14"/></symbol>
+  <symbol id="i-trash" viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></symbol>
+  <symbol id="i-upload" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></symbol>
+  <symbol id="i-flame" viewBox="0 0 24 24"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></symbol>
+  <symbol id="i-bed" viewBox="0 0 24 24"><path d="M14 4v10.54a4 4 0 1 1-4 0V4a2 2 0 0 1 4 0Z"/></symbol>
+  <symbol id="i-camera-off" viewBox="0 0 24 24"><line x1="2" x2="22" y1="2" y2="22"/><path d="M7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16"/><path d="M9.5 4h5L17 7h3a2 2 0 0 1 2 2v7.5"/><path d="M14.121 15.121A3 3 0 1 1 9.88 10.88"/></symbol>
+  <symbol id="i-camera" viewBox="0 0 24 24"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></symbol>
+  <symbol id="i-expand" viewBox="0 0 24 24"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" x2="14" y1="3" y2="10"/><line x1="3" x2="10" y1="21" y2="14"/></symbol>
+  <symbol id="i-image" viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></symbol>
+  <symbol id="i-octagon" viewBox="0 0 24 24"><path d="M12 16h.01"/><path d="M12 8v4"/><path d="M15.312 2a2 2 0 0 1 1.414.586l4.688 4.688A2 2 0 0 1 22 8.688v6.624a2 2 0 0 1-.586 1.414l-4.688 4.688a2 2 0 0 1-1.414.586H8.688a2 2 0 0 1-1.414-.586l-4.688-4.688A2 2 0 0 1 2 15.312V8.688a2 2 0 0 1 .586-1.414l4.688-4.688A2 2 0 0 1 8.688 2z"/></symbol>
+  <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"/><circle cx="12" cy="12" r="3"/></symbol>
+  <symbol id="i-chevron" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></symbol>
+  <symbol id="i-top" viewBox="0 0 24 24"><path d="M5 3h14"/><path d="m18 13-6-6-6 6"/><path d="M12 7v14"/></symbol>
+  <symbol id="i-again" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></symbol>
+  <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></symbol>
+  <symbol id="i-box" viewBox="0 0 24 24"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
+  <symbol id="i-check-circle" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></symbol>
+  <symbol id="i-x-circle" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></symbol>
+  <symbol id="i-wifi-off" viewBox="0 0 24 24"><path d="M12 20h.01"/><path d="M8.5 16.429a5 5 0 0 1 7 0"/><path d="M5 12.859a10 10 0 0 1 5.17-2.69"/><path d="M19 12.859a10 10 0 0 0-2.007-1.523"/><path d="M2 8.82a15 15 0 0 1 4.177-2.643"/><path d="M22 8.82a15 15 0 0 0-11.288-3.764"/><path d="m2 2 20 20"/></symbol>
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"/><path d="M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></symbol>
+  <symbol id="i-grid" viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18"/><path d="M3 15h18"/><path d="M9 3v18"/><path d="M15 3v18"/></symbol>
+  <symbol id="i-power" viewBox="0 0 24 24"><path d="M12 2v10"/><path d="M18.4 6.6a9 9 0 1 1-12.77.04"/></symbol>
+  <symbol id="i-save" viewBox="0 0 24 24"><path d="M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7"/><path d="M7 3v4a1 1 0 0 0 1 1h7"/></symbol>
+  <symbol id="i-bell" viewBox="0 0 24 24"><path d="M10.268 21a2 2 0 0 0 3.464 0"/><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"/></symbol>
+  <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></symbol>
+  <symbol id="i-send" viewBox="0 0 24 24"><path d="M14.536 21.686a.5.5 0 0 0 .937-.024l6.5-19a.496.496 0 0 0-.635-.635l-19 6.5a.5.5 0 0 0-.024.937l7.93 3.18a2 2 0 0 1 1.112 1.11z"/><path d="m21.854 2.147-10.94 10.939"/></symbol>
+  <symbol id="i-list-plus" viewBox="0 0 24 24"><path d="M11 12H3"/><path d="M16 6H3"/><path d="M16 18H3"/><path d="M18 9v6"/><path d="M21 12h-6"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></symbol>
+</svg>
 
-<div class="wrap">
+<div class="offline" id="offline" hidden><svg class="i"><use href="#i-wifi-off"/></svg>Ingen forbindelse til printeren – prøver igen…</div>
+
+<div class="app">
+  <header class="top">
+    <div class="titles">
+      <h1 id="title">PrintHub</h1>
+      <div class="status" id="status" data-tone="muted"><span class="dot"></span><span id="statusText">Forbinder…</span></div>
+    </div>
+    <nav class="tabs" id="tabs">
+      <button data-view="printer" class="active"><svg class="i"><use href="#i-printer"/></svg>Printer</button>
+      <button data-view="files"><svg class="i"><use href="#i-folder"/></svg>Filer</button>
+      <button data-view="queue"><svg class="i"><use href="#i-queue"/></svg>Kø<span class="badge" id="queueBadge" hidden></span></button>
+      <button data-view="console"><svg class="i"><use href="#i-terminal"/></svg>Konsol</button>
+    </nav>
+    <div class="top-acts">
+      <a class="iconbtn labeled" id="obicoBtn" href="#" target="_blank" rel="noopener" title="Obico (AI-overvågning)" aria-label="Obico" hidden><svg class="i"><use href="#i-eye"/></svg><span class="lbl">Obico</span></a>
+      <button class="estop" id="estopBtn" title="Nødstop" aria-label="Nødstop"><svg class="i"><use href="#i-octagon"/></svg><span class="lbl">Nødstop</span></button>
+    </div>
+  </header>
+
   <!-- PRINTER -->
   <section class="view active" id="v-printer">
-    <div class="grid two">
-      <div class="grid">
-        <div class="card cam" id="camCard">
-          <img id="camImg" alt="">
-          <div class="nocam" id="noCam" style="display:none">Kamera ikke tilgængeligt</div>
-          <div class="camctl">
-            <button id="camMode">Live</button>
-            <button id="camFull">⤢</button>
+    <div class="cols">
+      <div class="col">
+        <div class="card cam off" id="camCard">
+          <img id="camImg" alt="Kamera" hidden>
+          <div class="cam-ph" id="camPh">
+            <svg class="i"><use href="#i-camera"/></svg><b>Henter kamera…</b>
+          </div>
+          <div class="cam-ctl" id="camCtl" hidden>
+            <button class="glass" id="camMode"><span class="live"></span><span>Live</span></button>
+            <span class="sp"></span>
+            <button class="glass icon" id="camFull" aria-label="Fuld skærm"><svg class="i"><use href="#i-expand"/></svg></button>
+          </div>
+        </div>
+        <div class="card job" id="jobCard">
+          <div class="job-top">
+            <div class="thumb" id="jobThumbBox" hidden><img id="jobThumb" alt=""></div>
+            <div class="job-txt">
+              <div class="eyebrow" id="jobEyebrow">Klar</div>
+              <div class="job-name" id="jobName">Intet print i gang</div>
+              <div class="job-meta" id="jobMeta"></div>
+            </div>
+            <div class="big active-only" id="jobPct"></div>
+          </div>
+          <div class="active-only">
+            <div class="bar"><i id="jobBar"></i></div>
+            <div class="stats">
+              <div><span class="lbl">Forløbet</span><b id="sElapsed">–</b></div>
+              <div><span class="lbl">Tilbage</span><b id="sLeft">–</b></div>
+              <div><span class="lbl">Færdig kl.</span><b id="sDone">–</b></div>
+            </div>
+            <div class="row">
+              <button class="btn" id="pauseBtn"><svg class="i"><use href="#i-pause"/></svg><span>Pause</span></button>
+              <button class="btn danger-soft" id="cancelBtn"><svg class="i"><use href="#i-x"/></svg>Annullér</button>
+            </div>
+          </div>
+          <div class="idle-only row"><button class="btn" data-goto="files"><svg class="i"><use href="#i-folder"/></svg>Vælg fil</button></div>
+          <div class="alert" id="klippyAlert" hidden>
+            <svg class="i"><use href="#i-alert"/></svg>
+            <div><b id="klippyTitle">Klipper er stoppet</b><span id="klippyMsg"></span></div>
+            <button class="btn small" id="klippyRestart">Genstart</button>
           </div>
         </div>
       </div>
-      <div class="grid">
+      <div class="col">
         <div class="card">
-          <h2>Job</h2>
-          <div class="job">
-            <img class="thumb" id="jobThumb" alt="">
-            <div style="flex:1;min-width:0">
-              <div class="name" id="jobName">Ingen aktivt print</div>
-              <div class="meta" id="jobMeta"></div>
+          <div class="card-h">
+            <h2>Temperaturer</h2><span class="sp"></span>
+            <div class="seg" id="presets">
+              <button data-preset="pla">PLA</button><button data-preset="petg">PETG</button><button data-preset="off">Sluk</button>
             </div>
           </div>
-          <div class="bar"><div id="jobBar" style="width:0%"></div></div>
-          <div class="row between muted" style="font-size:13px"><span id="jobPct">0%</span><span id="jobEta"></span></div>
-          <div class="stats">
-            <div class="stat"><b id="sElapsed">–</b><span>Forløbet</span></div>
-            <div class="stat"><b id="sLeft">–</b><span>Tilbage</span></div>
-            <div class="stat"><b id="sDone">–</b><span>Færdig kl.</span></div>
-          </div>
-          <div class="row" style="margin-top:12px">
-            <button class="btn" id="pauseBtn" disabled>Pause</button>
-            <button class="btn danger" id="cancelBtn" disabled>Annullér</button>
+          <div class="temps">
+            <button class="temp" data-heater="extruder">
+              <span class="lbl"><svg class="i"><use href="#i-flame"/></svg>Dyse</span>
+              <span class="val" id="tExt">–</span><span class="tgt" id="tExtT">&nbsp;</span>
+              <span class="bar"><i id="tExtBar"></i></span>
+            </button>
+            <button class="temp" data-heater="heater_bed">
+              <span class="lbl"><svg class="i"><use href="#i-bed"/></svg>Bed</span>
+              <span class="val" id="tBed">–</span><span class="tgt" id="tBedT">&nbsp;</span>
+              <span class="bar"><i id="tBedBar"></i></span>
+            </button>
           </div>
         </div>
-        <div class="card">
-          <h2>Temperaturer</h2>
-          <div class="temps">
-            <button class="temp" data-heater="extruder"><div class="lbl">Dyse</div><div class="val" id="tExt">–</div><div class="tgt" id="tExtT">Mål: –</div></button>
-            <button class="temp" data-heater="heater_bed"><div class="lbl">Bed</div><div class="val" id="tBed">–</div><div class="tgt" id="tBedT">Mål: –</div></button>
-          </div>
-          <div class="row" style="margin-top:12px">
-            <button class="btn small" data-preset="pla">PLA</button>
-            <button class="btn small" data-preset="petg">PETG</button>
-            <button class="btn small" data-preset="off">Sluk</button>
-            <span style="flex:1"></span>
-            <span class="muted" style="font-size:13px" id="speedInfo"></span>
-          </div>
+        <div class="card" id="peekCard" hidden>
+          <div class="card-h"><h2>Næste i køen</h2><span class="sp"></span><button class="link" data-goto="queue">Se alle</button></div>
+          <div class="list" id="peekList"></div>
         </div>
       </div>
     </div>
@@ -165,306 +443,541 @@ input[type=text],input[type=number]{font:inherit;color:var(--text);background:va
   <!-- FILER -->
   <section class="view" id="v-files">
     <div class="card">
-      <div class="row between" style="margin-bottom:10px">
-        <h2 style="margin:0">Filbibliotek</h2>
-        <span class="muted" style="font-size:12px" id="diskInfo"></span>
+      <div class="card-h">
+        <h2>Filbibliotek</h2><span class="hint num" id="diskInfo"></span><span class="sp"></span>
+        <button class="btn small primary" id="uploadBtn"><svg class="i"><use href="#i-upload"/></svg>Upload</button>
       </div>
-      <label class="drop" id="drop">
-        <input type="file" id="fileInput" accept=".gcode,.g,.gco" multiple hidden>
-        <b>Upload G-code</b><br><span style="font-size:13px">Tryk her eller træk filer ind</span>
-      </label>
-      <div class="row" style="margin-bottom:6px">
-        <input type="text" id="fileSearch" placeholder="Søg…">
-      </div>
-      <div class="list" id="fileList"><div class="empty">Henter…</div></div>
+      <label class="search"><svg class="i"><use href="#i-search"/></svg><input class="field" type="search" id="fileSearch" placeholder="Søg i filer" autocomplete="off"></label>
+      <div class="list" id="fileList"></div>
     </div>
+    <input type="file" id="fileInput" accept=".gcode,.g,.gco" multiple hidden>
   </section>
 
   <!-- KØ -->
   <section class="view" id="v-queue">
-    <div class="card">
-      <div class="row between" style="margin-bottom:6px">
-        <h2 style="margin:0">Printkø</h2>
-        <span class="pill" id="queuePill">–</span>
+    <div class="cols even">
+      <div class="card">
+        <div class="card-h">
+          <h2>Printkø</h2><span class="pill" id="queuePill" hidden></span><span class="sp"></span>
+          <button class="iconbtn sm" id="queueInfo" aria-label="Sådan virker køen"><svg class="i"><use href="#i-info"/></svg></button>
+        </div>
+        <div class="list" id="queueList"></div>
+        <div class="row" id="queueCtl" style="margin-top:var(--s3)" hidden>
+          <button class="btn" id="qToggle"></button>
+          <button class="btn" id="qClear" style="flex:none"><svg class="i"><use href="#i-trash"/></svg>Ryd</button>
+        </div>
       </div>
-      <p class="muted" style="font-size:13px;margin:4px 0 12px">Når køen er aktiv, starter næste job automatisk, når det forrige er færdigt (kræver <code>automatic_transition</code> i moonraker.conf – ellers starter du hvert job med ▶).</p>
-      <div class="row" style="margin-bottom:10px">
-        <button class="btn primary" id="qStart">Start kø</button>
-        <button class="btn" id="qPause">Pause kø</button>
-        <button class="btn small" id="qClear">Ryd</button>
+      <div class="card">
+        <div class="card-h"><h2>Seneste prints</h2></div>
+        <div class="list" id="historyList"></div>
       </div>
-      <div class="list" id="queueList"><div class="empty">Køen er tom</div></div>
-    </div>
-    <div class="card" style="margin-top:14px">
-      <h2>Seneste prints</h2>
-      <div class="list" id="historyList"><div class="empty">Henter…</div></div>
     </div>
   </section>
 
   <!-- KONSOL -->
   <section class="view" id="v-console">
-    <div class="card">
-      <h2>Konsol</h2>
-      <div class="console" id="console"></div>
-      <form class="row" id="gcodeForm" style="margin-top:10px">
-        <input type="text" id="gcodeInput" placeholder="G-code, fx G28" autocomplete="off" autocapitalize="characters">
-        <button class="btn primary small" style="padding:10px 16px">Send</button>
-      </form>
-      <div class="chips">
-        <button class="chip" data-gcode="G28">Home alle</button>
-        <button class="chip" data-gcode="BED_MESH_CALIBRATE">Bed mesh</button>
-        <button class="chip" data-gcode="M84">Motorer fra</button>
-        <button class="chip" data-gcode="SAVE_CONFIG">Gem config</button>
-        <button class="chip" id="fwRestart">Firmware-genstart</button>
-        <button class="chip" id="notifyTest">Test notifikation</button>
+    <div class="cols">
+      <div class="card">
+        <div class="card-h"><h2>Konsol</h2><span class="sp"></span>
+          <button class="iconbtn sm" id="conRefresh" aria-label="Opdatér"><svg class="i"><use href="#i-refresh"/></svg></button></div>
+        <div class="console" id="console"></div>
+        <form class="send" id="gcodeForm">
+          <input class="field" type="text" id="gcodeInput" placeholder="G-code, fx G28" autocomplete="off" autocapitalize="characters" spellcheck="false">
+          <button class="btn primary" id="gcodeSend" aria-label="Send"><svg class="i"><use href="#i-send"/></svg></button>
+        </form>
+      </div>
+      <div class="card">
+        <div class="card-h"><h2>Genveje</h2></div>
+        <div class="tiles">
+          <button class="tile" data-gcode="G28" data-motion><svg class="i"><use href="#i-home"/></svg>Home alle</button>
+          <button class="tile" data-gcode="BED_MESH_CALIBRATE" data-motion><svg class="i"><use href="#i-grid"/></svg>Bed mesh</button>
+          <button class="tile" data-gcode="M84" data-motion><svg class="i"><use href="#i-power"/></svg>Motorer fra</button>
+          <button class="tile" data-gcode="SAVE_CONFIG"><svg class="i"><use href="#i-save"/></svg>Gem config</button>
+          <button class="tile" id="fwRestart"><svg class="i"><use href="#i-refresh"/></svg>Firmware-genstart</button>
+          <button class="tile" id="notifyTest"><svg class="i"><use href="#i-bell"/></svg>Test notifikation</button>
+        </div>
       </div>
     </div>
   </section>
 </div>
 
-<nav class="tabs">
-  <button data-view="printer" class="active"><span class="ic">🖨️</span>Printer</button>
-  <button data-view="files"><span class="ic">📁</span>Filer</button>
-  <button data-view="queue"><span class="ic">📋</span>Kø</button>
-  <button data-view="console"><span class="ic">⌨️</span>Konsol</button>
-</nav>
-
-<div class="sheet-bg" id="sheetBg"><div class="sheet" id="sheet"></div></div>
-<div class="toast" id="toast"></div>
+<div class="sheet-bg" id="sheetBg"><div class="sheet" id="sheet" role="dialog" aria-modal="true"></div></div>
+<div class="toast" id="toast" role="status"><svg class="i"><use href="#i-check-circle"/></svg><span></span></div>
+<div class="upbar" id="upbar" hidden><div class="row"><span id="upName"></span><span class="num" id="upPct"></span></div><div class="bar"><i id="upFill"></i></div></div>
+<div class="dropzone" id="dropzone"><div><svg class="i"><use href="#i-upload"/></svg><b>Slip for at uploade</b><span>G-code-filer (.gcode)</span></div></div>
 
 <script>
 const $ = s => document.querySelector(s);
 const $$ = s => [...document.querySelectorAll(s)];
-let S = {}, Q = null, connected = false, files = [], cfg = {};
+let S = {}, Q = null, connected = false, files = null, disk = {}, cfg = {};
 const PRESETS = {pla:{extruder:205,heater_bed:60}, petg:{extruder:235,heater_bed:75}, off:{extruder:0,heater_bed:0}};
-const STATE_DA = {standby:'Klar',printing:'Printer',paused:'Pauset',complete:'Færdig',cancelled:'Annulleret',error:'Fejl'};
+const STATE = {standby:['Klar','ok'], printing:['Printer nu','accent'], paused:['Sat på pause','warn'],
+  complete:['Færdig','ok'], cancelled:['Annulleret','muted'], error:['Fejl','err']};
+const HASH = {printer:'printer', files:'filer', queue:'ko', console:'konsol'};
 
-function toast(msg){const t=$('#toast');t.textContent=msg;t.classList.add('show');clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('show'),2600)}
+// ---------- hjælpere
+const ic = (n, cls='') => `<svg class="i ${cls}"><use href="#i-${n}"/></svg>`;
+const enc = p => p.split('/').map(encodeURIComponent).join('/');
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const base = p => p.split('/').pop().replace(/\.(gcode|gco|g)$/i, '');
+const nf = (x, d=0) => Number(x).toLocaleString('da-DK', {minimumFractionDigits:d, maximumFractionDigits:d});
+function dur(s){ if(s==null||!isFinite(s)||s<0) return '–'; s=Math.round(s); const h=Math.floor(s/3600), m=Math.floor(s%3600/60); return h ? `${h} t ${m} min` : `${m} min` }
+function durHTML(s){ if(s==null||!isFinite(s)||s<0) return '–'; s=Math.round(s); const h=Math.floor(s/3600), m=Math.floor(s%3600/60);
+  return h ? `${h}<small>t</small> ${m}<small>m</small>` : `${m}<small> min</small>` }
+function size(b){ if(!b) return ''; const u=['B','KB','MB','GB']; let i=0; while(b>=1024&&i<3){b/=1024;i++} return nf(b, i?1:0)+' '+u[i] }
+const clock = d => d.toLocaleTimeString('da-DK', {hour:'2-digit', minute:'2-digit'});
+function ago(ts){
+  const s = Date.now()/1000 - ts;
+  if(s < 90) return 'lige nu';
+  if(s < 3600) return `for ${Math.round(s/60)} min. siden`;
+  if(s < 86400){ const h=Math.round(s/3600); return `for ${h} ${h===1?'time':'timer'} siden` }
+  const d = new Date(ts*1000), y = new Date(); y.setDate(y.getDate()-1);
+  if(d.toDateString() === y.toDateString()) return 'i går';
+  return d.toLocaleDateString('da-DK', {day:'numeric', month:'short'});
+}
+const ps = () => S.print_stats || {};
+const isActive = () => ['printing','paused'].includes(ps().state);
+const progress = () => (S.display_status && S.display_status.progress) || (S.virtual_sdcard && S.virtual_sdcard.progress) || 0;
+const fileOf = p => files && files.find(f => f.path === p);
+function thumbHTML(f, fallback='box'){
+  return f && f.thumbnail ? `<span class="thumb"><img loading="lazy" alt="" src="/api/thumb/${enc(f.thumbnail)}" onerror="this.replaceWith(phIcon())"></span>`
+                          : `<span class="thumb">${ic(fallback)}</span>`;
+}
+function phIcon(){ const t=document.createElement('template'); t.innerHTML=ic('box'); return t.content.firstChild }
+const skelRows = n => Array.from({length:n}, () => `<div class="item"><span class="thumb skel"></span><span class="info">
+  <span class="skel" style="height:15px;width:55%"></span><span class="skel" style="height:12px;width:35%;margin-top:6px"></span></span></div>`).join('');
+const emptyHTML = (icon, title, text='', btn='') => `<div class="empty">${ic(icon)}<b>${title}</b>${text?`<span>${text}</span>`:''}${btn}</div>`;
+const errorHTML = (title, msg, retry) => `<div class="empty" data-tone="err">${ic('alert')}<b>${title}</b><span>${esc(msg)}</span>
+  <button class="btn small" data-retry="${retry}">${ic('refresh')}Prøv igen</button></div>`;
+
+function toast(msg, kind='ok'){
+  const t = $('#toast'); t.className = 'toast ' + kind;
+  t.querySelector('use').setAttribute('href', kind==='err' ? '#i-alert' : '#i-check-circle');
+  t.querySelector('span').textContent = msg;
+  requestAnimationFrame(() => t.classList.add('show'));
+  clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove('show'), kind==='err' ? 4500 : 2600);
+}
 async function api(path, opts={}){
-  if(opts.json){opts.body=JSON.stringify(opts.json);opts.headers={'Content-Type':'application/json'};delete opts.json}
-  const r = await fetch(path, opts);
-  let d=null; try{d=await r.json()}catch{}
-  if(!r.ok){const m=(d&&d.detail)||r.statusText;toast('Fejl: '+m);throw new Error(m)}
+  const quiet = opts.quiet; delete opts.quiet;
+  if(opts.json){ opts.body = JSON.stringify(opts.json); opts.headers = {'Content-Type':'application/json'}; delete opts.json }
+  let r;
+  try{ r = await fetch(path, opts) }
+  catch(e){ if(!quiet) toast('PrintHub kan ikke nås', 'err'); throw e }
+  let d = null; try{ d = await r.json() }catch{}
+  if(!r.ok){ const m = (d && d.detail) || r.statusText || ('HTTP ' + r.status); if(!quiet) toast(m, 'err'); throw new Error(m) }
   return d;
 }
-const enc = p => p.split('/').map(encodeURIComponent).join('/');
-function dur(s){if(s==null||!isFinite(s)||s<0)return'–';s=Math.round(s);const h=Math.floor(s/3600),m=Math.floor(s%3600/60);return h?`${h}t ${m}m`:`${m}m`}
-function size(b){if(!b)return'';const u=['B','KB','MB','GB'];let i=0;while(b>=1024&&i<3){b/=1024;i++}return b.toFixed(i?1:0)+' '+u[i]}
-function ago(ts){const s=Date.now()/1000-ts;if(s<3600)return Math.round(s/60)+' min siden';if(s<86400)return Math.round(s/3600)+' t siden';return new Date(ts*1000).toLocaleDateString('da-DK')}
-function esc(s){return String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
+// Deaktiverer knappen og viser en spinner, mens kaldet kører
+async function busy(btn, fn){
+  if(!btn || btn.classList.contains('busy')) return;
+  btn.classList.add('busy'); btn.disabled = true;
+  try{ await fn(); return true } catch{ return false } finally{ btn.classList.remove('busy'); btn.disabled = false; render() }
+}
 
-// ---------- tabs
-$$('.tabs button').forEach(b=>b.onclick=()=>{
-  $$('.tabs button').forEach(x=>x.classList.toggle('active',x===b));
-  $$('.view').forEach(v=>v.classList.toggle('active',v.id==='v-'+b.dataset.view));
-  if(b.dataset.view==='files')loadFiles();
-  if(b.dataset.view==='queue')loadHistory();
-  if(b.dataset.view==='console')loadConsole();
-  setCamActive(b.dataset.view==='printer');
+// ---------- sheets
+let sheetResolve = null;
+function openSheet(html){
+  if(sheetResolve){ sheetResolve(null); sheetResolve = null }
+  $('#sheet').innerHTML = '<div class="grabber"></div>' + html;
+  const bg = $('#sheetBg'); bg.classList.add('open'); void bg.offsetWidth; bg.classList.add('in');
+}
+function closeSheet(value=null){
+  const bg = $('#sheetBg'); bg.classList.remove('in');
+  setTimeout(() => { if(!bg.classList.contains('in')) bg.classList.remove('open') }, 300);
+  if(sheetResolve){ const r = sheetResolve; sheetResolve = null; r(value) }
+}
+function sheet(html){ openSheet(html); return new Promise(res => sheetResolve = res) }
+function ask({icon='alert', title, text='', ok, cancel='Annullér', danger=false}){
+  return sheet(`<div class="hero ${danger?'danger':''}">${ic(icon)}</div><h3 class="center">${esc(title)}</h3><p class="center">${esc(text)}</p>
+    <div class="acts"><button class="btn ${danger?'danger':'primary'}" data-res="1">${esc(ok)}</button><button class="btn" data-res="">${esc(cancel)}</button></div>`).then(Boolean);
+}
+$('#sheetBg').addEventListener('click', e => {
+  if(e.target.id === 'sheetBg' || e.target.closest('[data-close]')) return closeSheet();
+  const b = e.target.closest('[data-res]'); if(b) closeSheet(b.dataset.res || null);
+});
+document.addEventListener('keydown', e => { if(e.key === 'Escape' && $('#sheetBg').classList.contains('open')) closeSheet() });
+
+// ---------- navigation
+function go(view){
+  if(!HASH[view]) view = 'printer';
+  $$('#tabs button').forEach(b => b.classList.toggle('active', b.dataset.view === view));
+  $$('.view').forEach(v => v.classList.toggle('active', v.id === 'v-' + view));
+  history.replaceState(null, '', '#' + HASH[view]);
+  if(view === 'files') loadFiles();
+  if(view === 'queue'){ loadHistory(); if(!files) loadFiles() }
+  if(view === 'console') loadConsole();
+  setCamActive(view === 'printer');
+  scrollTo(0, 0);
+}
+$$('#tabs button').forEach(b => b.onclick = () => go(b.dataset.view));
+const viewFromHash = () => Object.keys(HASH).find(k => '#' + HASH[k] === location.hash) || 'printer';
+addEventListener('hashchange', () => go(viewFromHash()));
+document.addEventListener('click', e => {
+  const g = e.target.closest('[data-goto]'); if(g){ closeSheet(); go(g.dataset.goto) }
+  const r = e.target.closest('[data-retry]'); if(r) window[r.dataset.retry]();
 });
 
 // ---------- live websocket
 function connectWS(){
-  const ws = new WebSocket((location.protocol==='https:'?'wss://':'ws://')+location.host+'/ws');
+  const ws = new WebSocket((location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/ws');
   ws.onmessage = e => {
     const m = JSON.parse(e.data);
-    if(m.type==='init'){S=m.status||{};Q=m.queue;setConn(m.connected);render();renderQueue()}
-    else if(m.type==='status'){S=m.status;render()}
-    else if(m.type==='queue'){Q=m.queue;renderQueue()}
-    else if(m.type==='connection'){setConn(m.connected)}
-    else if(m.type==='files_changed'){if($('#v-files').classList.contains('active'))loadFiles()}
+    if(m.type === 'init'){ S = m.status || {}; Q = m.queue; setConn(m.connected); render(); renderQueue() }
+    else if(m.type === 'status'){ S = m.status; render() }
+    else if(m.type === 'queue'){ Q = m.queue; renderQueue() }
+    else if(m.type === 'connection'){ setConn(m.connected) }
+    else if(m.type === 'files_changed'){ if(files) loadFiles() }
   };
-  ws.onclose = () => {setConn(false);setTimeout(connectWS,3000)};
-  setInterval(()=>{try{ws.readyState===1&&ws.send('ping')}catch{}},25000);
+  ws.onclose = () => { setConn(false); setTimeout(connectWS, 3000) };
+  const ping = setInterval(() => { if(ws.readyState === 1) ws.send('ping'); else if(ws.readyState > 1) clearInterval(ping) }, 25000);
 }
-function setConn(c){connected=c;$('#dot').classList.toggle('on',c);$('#offline').classList.toggle('show',!c)}
+function setConn(c){ connected = c; $('#offline').hidden = c; render() }
 
-// ---------- render printer
-let lastFile=null, fileMeta={};
+// ---------- printer
+let missingFile = null;
 function render(){
-  const ps=S.print_stats||{}, st=ps.state||'standby';
-  const pill=$('#statePill'); pill.textContent=STATE_DA[st]||st; pill.className='pill '+st;
-  const ex=S.extruder||{}, bed=S.heater_bed||{};
-  $('#tExt').textContent=ex.temperature!=null?ex.temperature.toFixed(1)+'°':'–';
-  $('#tExtT').textContent='Mål: '+(ex.target?ex.target.toFixed(0)+'°':'fra');
-  $('#tBed').textContent=bed.temperature!=null?bed.temperature.toFixed(1)+'°':'–';
-  $('#tBedT').textContent='Mål: '+(bed.target?bed.target.toFixed(0)+'°':'fra');
-  $('[data-heater=extruder]').classList.toggle('heating',ex.target>0);
-  $('[data-heater=heater_bed]').classList.toggle('heating',bed.target>0);
-  const gm=S.gcode_move||{};
-  $('#speedInfo').textContent=gm.speed_factor?`Hastighed ${Math.round(gm.speed_factor*100)}%`:'';
+  const p = ps(), st = p.state || 'standby', wh = S.webhooks || {};
+  const klOK = !wh.state || wh.state === 'ready', active = isActive(), prog = progress();
+  const pct = Math.floor(prog * 100);
 
-  const active=['printing','paused'].includes(st);
-  const prog=(S.display_status&&S.display_status.progress)||(S.virtual_sdcard&&S.virtual_sdcard.progress)||0;
-  const fn=ps.filename||'';
-  $('#jobName').textContent=fn||'Ingen aktivt print';
-  if(fn&&fn!==lastFile){lastFile=fn;loadJobMeta(fn)}
-  if(!fn){$('#jobThumb').removeAttribute('src')}
-  const pct=active||st==='complete'?(st==='complete'?1:prog):0;
-  $('#jobBar').style.width=(pct*100).toFixed(1)+'%';
-  $('#jobPct').textContent=(pct*100).toFixed(1)+'%';
-  const el=ps.print_duration||0;
-  let left=null;
-  const est=fileMeta[fn]&&fileMeta[fn].estimated_time;
-  if(active&&prog>0.02){left=el/prog-el; if(est&&prog<0.15) left=Math.max(est-el,0)}
-  else if(active&&est){left=Math.max(est-el,0)}
-  $('#sElapsed').textContent=active||st==='complete'?dur(ps.total_duration):'–';
-  $('#sLeft').textContent=active?dur(left):'–';
-  $('#sDone').textContent=active&&left!=null?new Date(Date.now()+left*1000).toLocaleTimeString('da-DK',{hour:'2-digit',minute:'2-digit'}):'–';
-  const info=ps.info||{};
-  $('#jobMeta').textContent=[info.current_layer!=null&&info.total_layer?`Lag ${info.current_layer}/${info.total_layer}`:'',
-    ps.filament_used?`${(ps.filament_used/1000).toFixed(2)} m filament`:'', st==='error'?ps.message:''].filter(Boolean).join(' · ');
-  $('#jobEta').textContent=st==='printing'&&S.display_status&&S.display_status.message?S.display_status.message:'';
-  const pb=$('#pauseBtn'); pb.disabled=!active; pb.textContent=st==='paused'?'Genoptag':'Pause';
-  pb.classList.toggle('primary',st==='paused');
-  $('#cancelBtn').disabled=!active;
+  // status under titlen
+  let [txt, tone] = STATE[st] || [st, 'muted'];
+  if(!connected){ txt = 'Ikke forbundet'; tone = 'err' }
+  else if(!klOK){ txt = wh.state === 'startup' ? 'Klipper starter…' : 'Klipper er stoppet'; tone = wh.state === 'startup' ? 'warn' : 'err' }
+  else if(active) txt += ` · ${pct} %`;
+  $('#statusText').textContent = txt; $('#status').dataset.tone = tone;
+
+  // jobkort
+  const job = $('#jobCard'), fn = p.filename || '', f = fileOf(fn);
+  job.dataset.mode = active ? 'active' : klOK ? 'idle' : 'stopped';
+  $('#jobEyebrow').textContent = STATE[st] ? STATE[st][0] : st; $('#jobEyebrow').dataset.tone = STATE[st] ? STATE[st][1] : 'muted';
+  $('#jobName').textContent = fn && st !== 'standby' ? base(fn) : 'Intet print i gang';
+  if(fn && files && !f && missingFile !== fn){ missingFile = fn; loadFiles() }
+  const box = $('#jobThumbBox'), img = $('#jobThumb');
+  if(fn && st !== 'standby' && f && f.thumbnail){ const src = '/api/thumb/' + enc(f.thumbnail); if(img.getAttribute('src') !== src) img.src = src; box.hidden = false }
+  else box.hidden = true;
+
+  const info = p.info || {}, gm = S.gcode_move || {};
+  let meta = [];
+  if(active){
+    if(info.current_layer != null && info.total_layer) meta.push(`Lag ${info.current_layer} af ${info.total_layer}`);
+    if(p.filament_used) meta.push(`${nf(p.filament_used/1000, 1)} m filament`);
+    if(gm.speed_factor && Math.abs(gm.speed_factor - 1) > .005) meta.push(`Hastighed ${Math.round(gm.speed_factor*100)} %`);
+  } else if(st === 'complete') meta.push(`Tog ${dur(p.print_duration)}`);
+  else if(!klOK) meta = [];
+  else if(st === 'error' && p.message) meta.push(p.message);
+  else if(st === 'standby' || !fn) meta.push('Vælg en fil for at starte et print');
+  $('#jobMeta').textContent = meta.join(' · ');
+
+  $('#jobPct').innerHTML = `${pct}<small>%</small>`;
+  $('#jobBar').style.width = (prog * 100).toFixed(1) + '%';
+  const el = p.print_duration || 0, est = f && f.estimated_time;
+  let left = null;
+  if(active && prog > 0.02){ left = el/prog - el; if(est && prog < 0.15) left = Math.max(est - el, 0) }
+  else if(active && est) left = Math.max(est - el, 0);
+  $('#sElapsed').innerHTML = durHTML(p.total_duration);
+  $('#sLeft').innerHTML = durHTML(left);
+  $('#sDone').textContent = left != null ? clock(new Date(Date.now() + left*1000)) : '–';
+  const pb = $('#pauseBtn');
+  if(!pb.classList.contains('busy')){
+    pb.querySelector('span').textContent = st === 'paused' ? 'Genoptag' : 'Pause';
+    pb.querySelector('use').setAttribute('href', st === 'paused' ? '#i-play' : '#i-pause');
+    pb.classList.toggle('primary', st === 'paused');
+  }
+  $('#klippyAlert').hidden = !connected || klOK || wh.state === 'startup';
+  $('#klippyMsg').textContent = wh.state_message || '';
+
+  // temperaturer
+  temp('extruder', 'tExt'); temp('heater_bed', 'tBed');
+  const ex = (S.extruder||{}).target||0, bd = (S.heater_bed||{}).target||0;
+  $$('#presets button').forEach(b => { const pr = PRESETS[b.dataset.preset]; b.classList.toggle('on', pr.extruder === Math.round(ex) && pr.heater_bed === Math.round(bd)) });
 }
-async function loadJobMeta(fn){
-  try{
-    const f=files.find(x=>x.path===fn);
-    if(f){fileMeta[fn]=f}else{const d=await api('/api/files');files=d.files;fileMeta[fn]=files.find(x=>x.path===fn)||{}}
-    const t=fileMeta[fn].thumbnail; if(t)$('#jobThumb').src='/api/thumb/'+enc(t); else $('#jobThumb').removeAttribute('src');
-  }catch{}
+function temp(key, id){
+  const h = S[key] || {}, t = h.temperature, tg = h.target || 0, tile = $(`[data-heater=${key}]`);
+  $('#'+id).innerHTML = t != null ? `${nf(t, 1)}<small>°</small>` : '–';
+  const reached = tg > 0 && t != null && Math.abs(t - tg) <= 2;
+  $('#'+id+'T').textContent = !tg ? 'Slukket' : reached ? `Holder ${nf(tg)}°` : `Varmer op til ${nf(tg)}°`;
+  $('#'+id+'Bar').style.width = tg && t != null ? Math.min(t/tg, 1)*100 + '%' : '0';
+  tile.toggleAttribute('data-on', tg > 0); tile.toggleAttribute('data-reached', reached);
 }
 
-// ---------- controls
-$('#pauseBtn').onclick=()=>api('/api/print/'+((S.print_stats||{}).state==='paused'?'resume':'pause'),{method:'POST'});
-$('#cancelBtn').onclick=()=>{if(confirm('Annullér det igangværende print?'))api('/api/print/cancel',{method:'POST'}).then(()=>toast('Print annulleret'))};
-$('#estopBtn').onclick=()=>{if(confirm('NØDSTOP? Printeren stopper øjeblikkeligt og skal genstartes bagefter.'))api('/api/estop',{method:'POST'}).then(()=>toast('Nødstop sendt'))};
-$$('[data-preset]').forEach(b=>b.onclick=async()=>{const p=PRESETS[b.dataset.preset];
-  for(const h in p)await api('/api/temp',{method:'POST',json:{heater:h,target:p[h]}});toast(b.dataset.preset==='off'?'Varme slukket':'Forvarmer til '+b.textContent)});
-$$('.temp').forEach(b=>b.onclick=()=>{
-  const h=b.dataset.heater, cur=(S[h]||{}).target||0;
-  const opts=h==='extruder'?[0,190,205,215,235,250]:[0,50,60,70,80];
-  openSheet(`<h3>${h==='extruder'?'Dyse':'Bed'}-temperatur</h3>
-    <div class="chips">${opts.map(o=>`<button class="chip" data-t="${o}">${o?o+'°':'Sluk'}</button>`).join('')}</div>
-    <form class="row" id="tForm"><input type="number" id="tVal" value="${cur}" min="0" max="300" inputmode="numeric"><button class="btn primary small" style="padding:10px 16px">Sæt</button></form>`);
-  const set=async v=>{await api('/api/temp',{method:'POST',json:{heater:h,target:+v}});closeSheet()};
-  $$('#sheet [data-t]').forEach(c=>c.onclick=()=>set(c.dataset.t));
-  $('#tForm').onsubmit=e=>{e.preventDefault();set($('#tVal').value)};
+$('#pauseBtn').onclick = e => busy(e.currentTarget, () => api('/api/print/' + (ps().state === 'paused' ? 'resume' : 'pause'), {method:'POST'}));
+$('#cancelBtn').onclick = async e => {
+  const btn = e.currentTarget;
+  if(await ask({icon:'x-circle', title:'Annullér print?', text:`${base(ps().filename || 'Printet')} stoppes og kan ikke genoptages.`,
+                ok:'Annullér print', cancel:'Fortsæt print', danger:true}))
+    busy(btn, () => api('/api/print/cancel', {method:'POST'}).then(() => toast('Print annulleret')));
+};
+$('#estopBtn').onclick = async () => {
+  if(await ask({icon:'octagon', title:'Nødstop?', danger:true, ok:'Nødstop', cancel:'Annullér',
+                text:'Printeren stopper øjeblikkeligt. Varme og motorer slås fra, og Klipper skal genstartes bagefter.'}))
+    api('/api/estop', {method:'POST'}).then(() => toast('Nødstop sendt'));
+};
+async function firmwareRestart(btn){
+  if(await ask({icon:'refresh', title:'Genstart firmware?', text:'Klipper og printerens board genstartes. Det tager et halvt minut.', ok:'Genstart'}))
+    busy(btn, () => api('/api/firmware_restart', {method:'POST'}).then(() => toast('Firmware genstartes')));
+}
+$('#klippyRestart').onclick = e => firmwareRestart(e.currentTarget);
+$$('#presets button').forEach(b => b.onclick = () => busy(b, async () => {
+  const p = PRESETS[b.dataset.preset];
+  for(const h in p) await api('/api/temp', {method:'POST', json:{heater:h, target:p[h]}});
+  toast(b.dataset.preset === 'off' ? 'Varmen er slukket' : 'Forvarmer til ' + b.textContent);
+}));
+
+// temperatur-sheet
+$$('.temp').forEach(b => b.onclick = () => {
+  const h = b.dataset.heater, cur = S[h] || {}, isExt = h === 'extruder', max = isExt ? 300 : 110;
+  const opts = isExt ? [0,190,205,215,235,250] : [0,50,60,70,80];
+  openSheet(`<div class="sheet-h"><h3>${isExt ? 'Dyse' : 'Bed'}</h3><span class="muted num">Nu ${cur.temperature != null ? nf(cur.temperature,1) + '°' : '–'}</span></div>
+    <p>Måltemperatur</p>
+    <div class="stepper">
+      <button class="iconbtn" data-step="-5" aria-label="5 grader ned">${ic('minus')}</button>
+      <label class="stepval"><input id="tVal" type="number" inputmode="numeric" min="0" max="${max}" value="${Math.round(cur.target || 0)}"><span>°</span></label>
+      <button class="iconbtn" data-step="5" aria-label="5 grader op">${ic('plus')}</button>
+    </div>
+    <div class="seg" id="tSeg">${opts.map(o => `<button data-t="${o}">${o ? o + '°' : 'Sluk'}</button>`).join('')}</div>
+    <div class="acts two"><button class="btn" data-close>Annullér</button><button class="btn primary" id="tSet">Sæt</button></div>`);
+  const inp = $('#tVal');
+  const sync = () => $$('#tSeg button').forEach(x => x.classList.toggle('on', +x.dataset.t === +inp.value));
+  const clamp = v => Math.max(0, Math.min(max, Math.round(+v || 0)));
+  $$('#sheet [data-step]').forEach(x => x.onclick = () => { inp.value = clamp(+inp.value + +x.dataset.step); sync() });
+  $$('#tSeg button').forEach(x => x.onclick = () => { inp.value = x.dataset.t; sync() });
+  inp.oninput = sync; sync();
+  $('#tSet').onclick = e => busy(e.currentTarget, async () => {
+    const v = clamp(inp.value);
+    await api('/api/temp', {method:'POST', json:{heater:h, target:v}});
+    closeSheet(); toast(v ? `${isExt ? 'Dyse' : 'Bed'} sat til ${v}°` : `${isExt ? 'Dyse' : 'Bed'} slukket`);
+  });
 });
-function openSheet(html){$('#sheet').innerHTML=html;$('#sheetBg').classList.add('open')}
-function closeSheet(){$('#sheetBg').classList.remove('open')}
-$('#sheetBg').onclick=e=>{if(e.target.id==='sheetBg')closeSheet()};
 
 // ---------- kamera
-let camLive=true, camTimer=null, camActive=true;
-function setCamActive(on){camActive=on;startCam()}
-function startCam(){
-  const img=$('#camImg'); clearInterval(camTimer);
-  if(!camActive||document.hidden){img.src='';return}
-  img.onerror=()=>{$('#noCam').style.display='grid'}; img.onload=()=>{$('#noCam').style.display='none'};
-  if(camLive){img.src='/api/camera/stream?t='+Date.now()}
-  else{const snap=()=>img.src='/api/camera/snapshot?t='+Date.now();snap();camTimer=setInterval(snap,5000)}
-  $('#camMode').textContent=camLive?'Live':'Billede/5s';
+let camLive = true, camTimer = null, camActive = true;
+function camState(s){
+  const c = $('#camCard'), ph = $('#camPh');
+  c.classList.toggle('off', s !== 'on'); $('#camImg').hidden = s !== 'on'; $('#camCtl').hidden = s !== 'on'; ph.hidden = s === 'on';
+  if(s === 'loading') ph.innerHTML = `${ic('camera')}<b>Henter kamera…</b>`;
+  if(s === 'off') ph.innerHTML = `${ic('camera-off')}<b>Kamera ikke tilgængeligt</b><span>Tjek kameraet og crowsnest på Pi'en</span>
+    <button class="btn small" id="camRetry">${ic('refresh')}Prøv igen</button>`;
+  const r = $('#camRetry'); if(r) r.onclick = startCam;
 }
-$('#camMode').onclick=()=>{camLive=!camLive;startCam();toast(camLive?'Live-video':'Snapshot hvert 5. sek (sparer data)')};
-$('#camFull').onclick=()=>{const c=$('#camCard');(c.requestFullscreen||c.webkitRequestFullscreen||(()=>window.open('/api/camera/stream'))).call(c)};
-document.addEventListener('visibilitychange',startCam);
+function setCamActive(on){ if(on !== camActive){ camActive = on; startCam() } }
+async function startCam(){
+  const img = $('#camImg'); clearTimeout(camTimer); clearInterval(camTimer);
+  if(!camActive || document.hidden){ img.removeAttribute('src'); return }
+  if(img.hidden) camState('loading');
+  let ok = false; try{ ok = (await api('/api/camera/check', {quiet:true})).ok }catch{}
+  if(!camActive || document.hidden) return;
+  if(!ok){ img.removeAttribute('src'); camState('off'); camTimer = setTimeout(startCam, 20000); return }
+  img.onerror = () => { camState('off'); camTimer = setTimeout(startCam, 20000) };
+  if(camLive) img.src = '/api/camera/stream?t=' + Date.now();
+  else { const snap = () => img.src = '/api/camera/snapshot?t=' + Date.now(); snap(); camTimer = setInterval(snap, 5000) }
+  $('#camMode').innerHTML = camLive ? '<span class="live"></span><span>Live</span>' : `${ic('image')}<span>Hvert 5. sek.</span>`;
+  camState('on');
+}
+$('#camMode').onclick = () => { camLive = !camLive; startCam(); toast(camLive ? 'Live-video' : 'Stillbillede hvert 5. sek. (sparer data)') };
+$('#camFull').onclick = () => { const c = $('#camCard'); (c.requestFullscreen || c.webkitRequestFullscreen || (() => window.open('/api/camera/stream'))).call(c) };
+document.addEventListener('visibilitychange', startCam);
 
 // ---------- filer
 async function loadFiles(){
+  if(!files) $('#fileList').innerHTML = skelRows(4);
   try{
-    const d=await api('/api/files'); files=d.files;
-    if(d.disk&&d.disk.free)$('#diskInfo').textContent=size(d.disk.free)+' fri';
-    renderFiles();
-  }catch{$('#fileList').innerHTML='<div class="empty">Kunne ikke hente filer</div>'}
+    const d = await api('/api/files', {quiet:true}); files = d.files; disk = d.disk || {};
+    $('#diskInfo').textContent = disk.free ? size(disk.free) + ' fri' : '';
+    renderFiles(); renderQueue(); render();
+  }catch(e){ if(!files) $('#fileList').innerHTML = errorHTML('Kunne ikke hente filer', e.message, 'loadFiles') }
 }
+let shown = [];
 function renderFiles(){
-  const q=$('#fileSearch').value.toLowerCase();
-  const list=files.filter(f=>f.path.toLowerCase().includes(q));
-  $('#fileList').innerHTML=list.length?list.map(f=>`
-    <div class="item">
-      ${f.thumbnail?`<img loading="lazy" src="/api/thumb/${enc(f.thumbnail)}">`:'<div class="ph">🧊</div>'}
-      <div class="info"><div class="name">${esc(f.path)}</div>
-        <div class="meta">${[f.estimated_time?dur(f.estimated_time):'',f.filament_total?(f.filament_total/1000).toFixed(1)+' m':'',size(f.size),f.modified?ago(f.modified):''].filter(Boolean).join(' · ')}</div></div>
-      <div class="acts">
-        <button class="btn small primary" data-print="${esc(f.path)}" title="Print nu">▶</button>
-        <button class="btn small" data-queue="${esc(f.path)}" title="Tilføj til kø">＋</button>
-        <button class="btn small" data-del="${esc(f.path)}" title="Slet">🗑</button>
-      </div>
-    </div>`).join(''):'<div class="empty">Ingen filer</div>';
-  $$('[data-print]').forEach(b=>b.onclick=()=>{
-    const st=(S.print_stats||{}).state;
-    if(['printing','paused'].includes(st))return toast('Printeren er optaget – tilføj til kø i stedet');
-    if(confirm('Start print af '+b.dataset.print+'?'))api('/api/print/start',{method:'POST',json:{filename:b.dataset.print}}).then(()=>{toast('Print startet');$('[data-view=printer]').click()})});
-  $$('[data-queue]').forEach(b=>b.onclick=()=>api('/api/queue',{method:'POST',json:{filenames:[b.dataset.queue]}}).then(()=>toast('Tilføjet til køen')));
-  $$('[data-del]').forEach(b=>b.onclick=()=>{if(confirm('Slet '+b.dataset.del+'?'))api('/api/files/'+enc(b.dataset.del),{method:'DELETE'}).then(()=>{toast('Slettet');loadFiles()})});
+  if(!files) return;
+  const q = $('#fileSearch').value.trim().toLowerCase();
+  shown = files.filter(f => f.path.toLowerCase().includes(q));
+  $('#fileList').innerHTML = shown.length ? shown.map((f, i) => `<button class="item" data-file="${i}">${thumbHTML(f)}
+      <span class="info"><span class="name">${esc(base(f.path))}</span>
+      <span class="meta">${[f.estimated_time ? dur(f.estimated_time) : '', f.filament_total ? nf(f.filament_total/1000, 1) + ' m' : '', f.modified ? ago(f.modified) : ''].filter(Boolean).join(' · ')}</span></span>
+      ${ic('chevron', 'chev')}</button>`).join('')
+    : q ? emptyHTML('search', 'Ingen filer matcher', `Intet hedder «${esc(q)}»`)
+        : emptyHTML('box', 'Ingen filer endnu', 'Upload G-code herfra eller direkte fra sliceren.',
+                    `<button class="btn small primary" onclick="$('#fileInput').click()">${ic('upload')}Upload</button>`);
 }
-$('#fileSearch').oninput=renderFiles;
-async function uploadFiles(list){
-  if(!list.length)return;
-  const action=await new Promise(res=>{
-    openSheet(`<h3>${list.length===1?esc(list[0].name):list.length+' filer'}</h3>
-      <div class="grid"><button class="btn" data-a="none">Kun upload</button>
-      <button class="btn" data-a="queue">Upload og tilføj til kø</button>
-      ${list.length===1?'<button class="btn primary" data-a="print">Upload og print nu</button>':''}</div>`);
-    $$('#sheet [data-a]').forEach(b=>b.onclick=()=>{closeSheet();res(b.dataset.a)});
+$('#fileSearch').oninput = renderFiles;
+$('#fileList').addEventListener('click', e => { const b = e.target.closest('[data-file]'); if(b) fileSheet(shown[+b.dataset.file]) });
+function fileSheet(f){
+  const busyPrinter = isActive();
+  const facts = [['Printtid', f.estimated_time && dur(f.estimated_time)], ['Filament', f.filament_total && nf(f.filament_total/1000, 1) + ' m'],
+    ['Lagtykkelse', f.layer_height && nf(f.layer_height, 2) + ' mm'], ['Størrelse', size(f.size)], ['Slicer', f.slicer]].filter(x => x[1]);
+  openSheet(`<div class="detail-thumb">${f.thumbnail ? `<img alt="" src="/api/thumb/${enc(f.thumbnail)}" onerror="this.replaceWith(phIcon())">` : ic('box')}</div>
+    <h3 class="center">${esc(base(f.path))}</h3><p class="center">${f.modified ? 'Uploadet ' + ago(f.modified) : esc(f.path)}</p>
+    <dl class="facts">${facts.map(([k, v]) => `<div><dt>${k}</dt><dd>${esc(v)}</dd></div>`).join('')}</dl>
+    <div class="acts">
+      <button class="btn primary" id="fPrint" ${busyPrinter ? 'disabled' : ''}>${ic('play')}Print nu</button>
+      ${busyPrinter ? '<div class="note">Printeren er optaget – læg filen i køen i stedet.</div>' : ''}
+      <button class="btn" id="fQueue">${ic('list-plus')}Læg i kø</button>
+      <button class="btn danger-soft" id="fDel">${ic('trash')}Slet</button>
+    </div>`);
+  $('#fPrint').onclick = e => busy(e.currentTarget, async () => {
+    await api('/api/print/start', {method:'POST', json:{filename:f.path}}); closeSheet(); toast('Print startet'); go('printer');
   });
-  for(const f of list){
-    const fd=new FormData(); fd.append('file',f);
-    toast('Uploader '+f.name+'…');
-    await api('/api/files/upload?action='+action,{method:'POST',body:fd});
-  }
-  toast(action==='print'?'Print startet':action==='queue'?'Lagt i kø':'Upload færdig'); loadFiles();
+  $('#fQueue').onclick = e => busy(e.currentTarget, async () => {
+    await api('/api/queue', {method:'POST', json:{filenames:[f.path]}}); closeSheet(); toast('Lagt i køen');
+  });
+  $('#fDel').onclick = async () => {
+    if(!await ask({icon:'trash', title:'Slet fil?', text:`${base(f.path)} slettes fra printeren.`, ok:'Slet', danger:true})) return;
+    try{ await api('/api/files/' + enc(f.path), {method:'DELETE'}); toast('Filen er slettet'); loadFiles() }catch{}
+  };
 }
-$('#fileInput').onchange=e=>{uploadFiles([...e.target.files]);e.target.value=''};
-const drop=$('#drop');
-['dragenter','dragover'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.add('over')}));
-['dragleave','drop'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.remove('over')}));
-drop.addEventListener('drop',e=>uploadFiles([...e.dataTransfer.files]));
+
+// upload
+$('#uploadBtn').onclick = () => $('#fileInput').click();
+$('#fileInput').onchange = e => { uploadFiles([...e.target.files]); e.target.value = '' };
+function uploadOne(file, action, onProgress){
+  return new Promise((res, rej) => {
+    const x = new XMLHttpRequest(), fd = new FormData(); fd.append('file', file);
+    x.open('POST', '/api/files/upload?action=' + action);
+    x.upload.onprogress = e => e.lengthComputable && onProgress(e.loaded / e.total);
+    x.onload = () => { if(x.status < 400) return res(); let m = x.statusText; try{ m = JSON.parse(x.responseText).detail || m }catch{} rej(new Error(m)) };
+    x.onerror = () => rej(new Error('Netværksfejl'));
+    x.send(fd);
+  });
+}
+async function uploadFiles(list){
+  const bad = list.filter(f => !/\.(gcode|gco|g)$/i.test(f.name));
+  list = list.filter(f => !bad.includes(f));
+  if(bad.length) toast(`${bad.length === 1 ? bad[0].name : bad.length + ' filer'}: kun G-code kan uploades`, 'err');
+  if(!list.length) return;
+  const one = list.length === 1, canPrint = one && !isActive();
+  const action = await sheet(`<h3>${one ? esc(base(list[0].name)) : list.length + ' filer'}</h3><p>${one ? size(list[0].size) : 'Hvad skal der ske med filerne?'}</p>
+    <div class="acts">
+      <button class="opt" data-res="none">${ic('upload')}<span><b>Kun upload</b><span>Gem i filbiblioteket</span></span></button>
+      <button class="opt" data-res="queue">${ic('list-plus')}<span><b>Upload og læg i kø</b><span>Printes, når køen når dertil</span></span></button>
+      ${one ? `<button class="opt" data-res="print" ${canPrint ? '' : 'disabled'}>${ic('play')}<span><b>Upload og print nu</b><span>${canPrint ? 'Starter med det samme' : 'Printeren er optaget'}</span></span></button>` : ''}
+      <button class="btn" data-close>Annullér</button>
+    </div>`);
+  if(!action) return;
+  const bar = $('#upbar'); bar.hidden = false;
+  try{
+    for(const [i, f] of list.entries()){
+      $('#upName').textContent = `Uploader ${base(f.name)}` + (one ? '' : ` (${i+1}/${list.length})`);
+      const prog = p => { $('#upPct').textContent = Math.round(p*100) + ' %'; $('#upFill').style.width = p*100 + '%' }; prog(0);
+      await uploadOne(f, action, prog);
+    }
+    toast(action === 'print' ? 'Print startet' : action === 'queue' ? 'Uploadet og lagt i kø' : 'Upload færdig');
+    if(action === 'print') go('printer');
+  }catch(e){ toast('Upload fejlede: ' + e.message, 'err') }
+  finally{ bar.hidden = true; loadFiles() }
+}
+// træk og slip overalt på siden
+let dragDepth = 0;
+const hasFiles = e => [...(e.dataTransfer?.types || [])].includes('Files');
+const dz = on => $('#dropzone').classList.toggle('show', on);
+addEventListener('dragenter', e => { if(hasFiles(e)){ e.preventDefault(); dragDepth++; dz(true) } });
+addEventListener('dragover', e => { if(hasFiles(e)) e.preventDefault() });
+addEventListener('dragleave', e => { if(hasFiles(e) && --dragDepth <= 0){ dragDepth = 0; dz(false) } });
+addEventListener('drop', e => { if(!hasFiles(e)) return; e.preventDefault(); dragDepth = 0; dz(false); uploadFiles([...e.dataTransfer.files]) });
 
 // ---------- kø
-const QSTATE={ready:'Aktiv',loading:'Indlæser',starting:'Starter',paused:'Pauset'};
 function renderQueue(){
-  if(!Q)return;
-  $('#queuePill').textContent=QSTATE[Q.queue_state]||Q.queue_state;
-  $('#queuePill').className='pill '+(Q.queue_state==='ready'?'printing':'paused');
-  const jobs=Q.queued_jobs||[];
-  $('#queueList').innerHTML=jobs.length?jobs.map((j,i)=>{
-    const f=files.find(x=>x.path===j.filename)||{};
-    return `<div class="item">
-      ${f.thumbnail?`<img src="/api/thumb/${enc(f.thumbnail)}">`:`<div class="ph">${i+1}</div>`}
-      <div class="info"><div class="name">${esc(j.filename)}</div><div class="meta">${f.estimated_time?dur(f.estimated_time)+' · ':''}i kø ${dur(j.time_in_queue)}</div></div>
-      <div class="acts">${i?`<button class="btn small" data-jump="${j.job_id}" title="Flyt først">⤒</button>`:''}
-      <button class="btn small" data-rm="${j.job_id}" title="Fjern">✕</button></div></div>`}).join(''):'<div class="empty">Køen er tom – tilføj filer fra Filer</div>';
-  $$('[data-jump]').forEach(b=>b.onclick=()=>api('/api/queue/jump?job_id='+b.dataset.jump,{method:'POST'}));
-  $$('[data-rm]').forEach(b=>b.onclick=()=>api('/api/queue/'+b.dataset.rm,{method:'DELETE'}));
+  if(!Q){ $('#queueList').innerHTML = skelRows(2); return }
+  const jobs = Q.queued_jobs || [], ready = Q.queue_state === 'ready';
+  const badge = $('#queueBadge'); badge.hidden = !jobs.length; badge.textContent = jobs.length;
+  const pill = $('#queuePill'); pill.hidden = !jobs.length;
+  pill.textContent = ready ? 'Aktiv' : 'Sat på pause'; pill.dataset.tone = ready ? 'ok' : 'warn';
+  const row = (j, i, acts) => { const f = fileOf(j.filename);
+    return `<div class="item">${f && f.thumbnail ? thumbHTML(f) : `<span class="thumb pos">${i+1}</span>`}
+      <span class="info"><span class="name">${esc(base(j.filename))}</span>
+      <span class="meta">${[f && f.estimated_time ? dur(f.estimated_time) : '', i === 0 ? 'Næste' : `Nr. ${i+1}`].filter(Boolean).join(' · ')}</span></span>${acts}</div>` };
+  $('#queueList').innerHTML = jobs.length ? jobs.map((j, i) => row(j, i, `<span class="item-acts">
+      ${i ? `<button class="iconbtn sm" data-jump="${esc(j.job_id)}" aria-label="Flyt først" title="Flyt først">${ic('top')}</button>` : ''}
+      <button class="iconbtn sm" data-rm="${esc(j.job_id)}" aria-label="Fjern fra køen" title="Fjern">${ic('x')}</button></span>`)).join('')
+    : emptyHTML('queue', 'Køen er tom', 'Læg filer i køen fra Filer, så printes de efter hinanden.',
+                `<button class="btn small" data-goto="files">${ic('folder')}Gå til Filer</button>`);
+  $('#queueCtl').hidden = !jobs.length;
+  const t = $('#qToggle');
+  if(!t.classList.contains('busy')){
+    t.innerHTML = ready ? `${ic('pause')}Sæt kø på pause` : `${ic('play')}Start kø`;
+    t.classList.toggle('primary', !ready);
+  }
+  $('#peekCard').hidden = !jobs.length;
+  $('#peekList').innerHTML = jobs.slice(0, 3).map((j, i) => row(j, i, '')).join('');
 }
-$('#qStart').onclick=()=>api('/api/queue/start',{method:'POST'}).then(()=>toast('Kø startet'));
-$('#qPause').onclick=()=>api('/api/queue/pause',{method:'POST'}).then(()=>toast('Kø pauset'));
-$('#qClear').onclick=()=>{if(confirm('Ryd hele køen?'))api('/api/queue/clear',{method:'POST'})};
+$('#queueList').addEventListener('click', e => {
+  const j = e.target.closest('[data-jump]'), r = e.target.closest('[data-rm]');
+  if(j) busy(j, () => api('/api/queue/jump?job_id=' + encodeURIComponent(j.dataset.jump), {method:'POST'}));
+  if(r) busy(r, () => api('/api/queue/' + encodeURIComponent(r.dataset.rm), {method:'DELETE'}));
+});
+$('#qToggle').onclick = e => busy(e.currentTarget, async () => {
+  const start = Q.queue_state !== 'ready';
+  await api('/api/queue/' + (start ? 'start' : 'pause'), {method:'POST'}); toast(start ? 'Køen er startet' : 'Køen er sat på pause');
+});
+$('#qClear').onclick = async e => {
+  const btn = e.currentTarget;
+  if(await ask({icon:'trash', title:'Ryd køen?', text:'Alle job fjernes fra køen. Filerne bliver liggende.', ok:'Ryd kø', danger:true}))
+    busy(btn, () => api('/api/queue/clear', {method:'POST'}).then(() => toast('Køen er ryddet')));
+};
+$('#queueInfo').onclick = () => openSheet(`<div class="hero">${ic('queue')}</div><h3 class="center">Sådan virker køen</h3>
+  <p class="center">Når køen er aktiv, startes næste job, når det forrige er færdigt – hvis <b>automatic_transition</b> er slået til i moonraker.conf.</p>
+  <p class="center" style="margin-top:10px">Ellers sættes køen på pause efter hvert job, og du trykker <b>Start kø</b>, når pladen er tom.</p>
+  <div class="acts"><button class="btn" data-close>OK</button></div>`);
+
+const HIST = {completed:['check-circle','ok','Færdig'], cancelled:['x-circle','muted','Annulleret'], error:['alert','err','Fejl'],
+  klippy_shutdown:['alert','err','Stoppet'], klippy_disconnect:['alert','err','Afbrudt'], server_exit:['alert','err','Afbrudt'], in_progress:['clock','accent','I gang']};
+let historyLoaded = false;
 async function loadHistory(){
-  if(!files.length){try{files=(await api('/api/files')).files;renderQueue()}catch{}}
+  if(!historyLoaded) $('#historyList').innerHTML = skelRows(3);
   try{
-    const d=await api('/api/history?limit=15');
-    const icon={completed:'✅',cancelled:'⏹',error:'⚠️',klippy_shutdown:'⚠️',in_progress:'⏳'};
-    $('#historyList').innerHTML=(d.jobs||[]).map(j=>`<div class="item"><div class="ph">${icon[j.status]||'•'}</div>
-      <div class="info"><div class="name">${esc(j.filename)}</div><div class="meta">${dur(j.print_duration)} · ${ago(j.start_time)}</div></div>
-      <div class="acts"><button class="btn small" data-queue="${esc(j.filename)}" title="Print igen (kø)">↻</button></div></div>`).join('')||'<div class="empty">Ingen historik endnu</div>';
-    $$('#historyList [data-queue]').forEach(b=>b.onclick=()=>api('/api/queue',{method:'POST',json:{filenames:[b.dataset.queue]}}).then(()=>toast('Tilføjet til køen')));
-  }catch{$('#historyList').innerHTML='<div class="empty">Historik ikke tilgængelig ([history] i moonraker.conf)</div>'}
+    const d = await api('/api/history?limit=15', {quiet:true}); historyLoaded = true;
+    $('#historyList').innerHTML = (d.jobs || []).map(j => { const [icon, tone, lbl] = HIST[j.status] || ['clock', 'muted', j.status];
+      return `<div class="item"><span class="st" data-tone="${tone}">${ic(icon)}</span>
+        <span class="info"><span class="name">${esc(base(j.filename))}</span><span class="meta">${lbl} · ${dur(j.print_duration)} · ${ago(j.start_time)}</span></span>
+        <button class="iconbtn sm" data-again="${esc(j.filename)}" aria-label="Print igen" title="Læg i kø igen">${ic('again')}</button></div>` }).join('')
+      || emptyHTML('clock', 'Ingen prints endnu', 'Færdige prints vises her.');
+  }catch(e){
+    $('#historyList').innerHTML = errorHTML('Historik ikke tilgængelig', 'Kræver [history] i moonraker.conf', 'loadHistory');
+  }
 }
+$('#historyList').addEventListener('click', e => { const b = e.target.closest('[data-again]');
+  if(b) busy(b, () => api('/api/queue', {method:'POST', json:{filenames:[b.dataset.again]}}).then(() => toast('Lagt i køen'))) });
 
 // ---------- konsol
+let consoleLoaded = false;
 async function loadConsole(){
-  try{const d=await api('/api/gcode/log?count=80');const c=$('#console');
-    c.innerHTML=(d.gcode_store||[]).map(l=>`<div class="${l.type==='command'?'cmd':''}">${l.type==='command'?'› ':''}${esc(l.message)}</div>`).join('');
-    c.scrollTop=c.scrollHeight}catch{}
+  const c = $('#console');
+  if(!consoleLoaded) c.innerHTML = '<span class="skel" style="height:12px;width:60%"></span><br><span class="skel" style="height:12px;width:40%"></span>';
+  try{
+    const d = await api('/api/gcode/log?count=100', {quiet:true}); consoleLoaded = true;
+    const lines = d.gcode_store || [];
+    c.innerHTML = lines.length ? lines.map(l => `<div class="${l.type === 'command' ? 'cmd' : /^!!|error/i.test(l.message) ? 'bad' : ''}">${esc(l.message)}</div>`).join('')
+                               : '<div>Ingen beskeder endnu.</div>';
+    c.scrollTop = c.scrollHeight;
+  }catch(e){ c.innerHTML = `<div class="bad">Kunne ikke hente konsollen: ${esc(e.message)}</div>` }
 }
-async function sendGcode(g){toast('Sender '+g);try{await api('/api/gcode',{method:'POST',json:{script:g}})}finally{loadConsole()}}
-$('#gcodeForm').onsubmit=e=>{e.preventDefault();const g=$('#gcodeInput').value.trim();if(g){sendGcode(g);$('#gcodeInput').value=''}};
-$$('[data-gcode]').forEach(b=>b.onclick=()=>{if(b.dataset.gcode!=='SAVE_CONFIG'||confirm('Gem config og genstart Klipper?'))sendGcode(b.dataset.gcode)});
-$('#fwRestart').onclick=()=>{if(confirm('Genstart firmware?'))api('/api/firmware_restart',{method:'POST'}).then(()=>toast('Firmware genstartes'))};
-$('#notifyTest').onclick=()=>api('/api/notify/test',{method:'POST'}).then(()=>toast('Test sendt'));
+$('#conRefresh').onclick = e => busy(e.currentTarget, loadConsole);
+function sendGcode(g, btn){
+  return busy(btn, async () => { try{ await api('/api/gcode', {method:'POST', json:{script:g}}) } finally{ await loadConsole() } });
+}
+$('#gcodeForm').onsubmit = e => { e.preventDefault(); const g = $('#gcodeInput').value.trim(); if(g){ $('#gcodeInput').value = ''; sendGcode(g, $('#gcodeSend')) } };
+$$('[data-gcode]').forEach(b => b.onclick = async () => {
+  const g = b.dataset.gcode;
+  if(b.hasAttribute('data-motion') && isActive()) return toast('Ikke mens der printes', 'err');
+  if(g === 'SAVE_CONFIG' && !await ask({icon:'save', title:'Gem config?', text:'Indstillingerne gemmes i printer.cfg, og Klipper genstarter.', ok:'Gem og genstart'})) return;
+  if(await sendGcode(g, b)) toast(b.textContent.trim() + ' sendt');
+});
+$('#fwRestart').onclick = e => firmwareRestart(e.currentTarget);
+$('#notifyTest').onclick = e => busy(e.currentTarget, () => api('/api/notify/test', {method:'POST'}).then(() => toast('Testbesked sendt')));
 
 // ---------- start
-(async()=>{
-  try{cfg=await api('/api/config');$('#title').textContent=cfg.printer_name;document.title=cfg.printer_name+' · PrintHub';
-    if(cfg.obico_url){const o=$('#obicoBtn');o.href=cfg.obico_url;o.style.display='grid'}}catch{}
-  connectWS(); startCam();
-  try{files=(await api('/api/files')).files}catch{}
-  setInterval(()=>{if((S.print_stats||{}).state==='printing')render()},30000);
+(async () => {
+  render(); renderQueue();
+  const start = viewFromHash();
+  try{
+    cfg = await api('/api/config', {quiet:true});
+    $('#title').textContent = cfg.printer_name; document.title = cfg.printer_name + ' · PrintHub';
+    if(cfg.obico_url){ const o = $('#obicoBtn'); o.href = cfg.obico_url; o.hidden = false }
+  }catch{}
+  connectWS();
+  if(start === 'printer') startCam(); else go(start);
+  loadFiles();
+  setInterval(() => { if(ps().state === 'printing') render() }, 30000);
 })();
 </script>
 </body>

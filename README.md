@@ -126,10 +126,13 @@ Kamera, thumbnails og alt andet går gennem PrintHub, så kun port 8095 skal ud.
 
 ## Udvikling / test lokalt
 ```bash
-pip install -r requirements.txt
-cd tests && uvicorn mock_moonraker:app --port 7125 &      # falsk printer
-cd .. && MOONRAKER_URL=http://127.0.0.1:7125 uvicorn app.main:app --port 8095
+pip install -r requirements.txt -r requirements-dev.txt && playwright install chromium
+cd tests && uvicorn mock_moonraker:app --port 7125 &      # falsk printer (med kamera og thumbnails)
+cd .. && MOONRAKER_URL=http://127.0.0.1:7125   CAMERA_STREAM_URL='http://127.0.0.1:7125/webcam/?action=stream'   CAMERA_SNAPSHOT_URL='http://127.0.0.1:7125/webcam/?action=snapshot'   uvicorn app.main:app --port 8095
+python tests/smoke_ui.py            # klikker UI'et igennem mod mocken
+python tests/screenshots.py shots/  # skærmbilleder: mobil/desktop, lyst/mørkt, alle faner
 ```
+Mocken har ekstra endpoints til test: `POST /mock/reset` og `POST /mock/camera?on=0|1`.
 
 ### Miljøvariabler
 | Variabel | Standard | Beskrivelse |

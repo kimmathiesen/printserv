@@ -449,12 +449,24 @@ async def queue_action(action: str, job_id: str = ""):
 
 
 # --- kamera (proxies, så det også virker udefra via én adresse)
+@app.get("/api/camera/check")
+async def camera_check():
+    """Svarer altid 200, så UI'et kan vise en pæn tom-tilstand uden fejl i browserkonsollen."""
+    try:
+        r = await http.get(CAMERA_SNAPSHOT_URL, timeout=4)
+        return {"ok": r.status_code == 200}
+    except httpx.HTTPError:
+        return {"ok": False}
+
+
 @app.get("/api/camera/snapshot")
 async def snapshot():
     try:
         r = await http.get(CAMERA_SNAPSHOT_URL, timeout=8)
     except httpx.HTTPError:
         raise HTTPException(502, "Kamera kan ikke nås")
+    if r.status_code != 200:
+        raise HTTPException(502, "Kamera svarer ikke")
     return Response(r.content, media_type=r.headers.get("content-type", "image/jpeg"),
                     headers={"Cache-Control": "no-store"})
 
@@ -468,6 +480,10 @@ async def stream():
     except httpx.HTTPError:
         await client.aclose()
         raise HTTPException(502, "Kamera kan ikke nås")
+    if r.status_code != 200:
+        await r.aclose()
+        await client.aclose()
+        raise HTTPException(502, "Kamera svarer ikke")
 
     async def gen():
         try:
